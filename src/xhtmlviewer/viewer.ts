@@ -29,7 +29,7 @@ export function updateHTML(msg:HTMLUpdateMessage) {
 	viewer(undefined);
 	if (webviewer) { 
 		webviewer.webview.html = 
-		"<iframe width=\"100%\" height=650px\" src=\"http://localhost:8080/:stexlspdocumentserver/document?" + msg.html + "\" title=\"Preview\"></iframe>";
+		"<iframe width=\"100%\" height=650px\" src=\"" + msg.html + "\" title=\"Preview\" style=\"background:white\"></iframe>";
 	}
 }
 
