@@ -131,7 +131,7 @@ function launchSTeXServer(context: STeXContext) {
 		"-Xmx8192m",
 		"-classpath",
 		jarPath,
-		"info.kwarc.fomtex.Main",
+		"info.kwarc.mmt.stex.lsp.Main",
 		mathhubO
 	  ];
 	const launchArgs = baseProperties

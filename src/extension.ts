@@ -29,8 +29,8 @@ export function activate(context: vscode.ExtensionContext) {
 
 	const thiscontext = new STeXContext(context);
 
-	//launchLocal(thiscontext);
-	launchRemote(thiscontext);
+	launchLocal(thiscontext);
+	//launchRemote(thiscontext);
 	console.log("Blubb");
 }
 
