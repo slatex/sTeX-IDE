@@ -157,8 +157,7 @@ import { HTMLUpdateMessage, updateHTML } from '../xhtmlviewer/viewer';
 function handleClient(context: STeXContext) {
 	if (!context.client) {return;}
 	const features = new STeXFeatures(context.client);
-	//const features = new FoMTeXFeatures(context.client);
-	//context.client.registerFeature(features);
+	context.client.registerFeature(features);
 
 	function registerCommand(command: string, callback: (...args: any[]) => any) {
 		context.context.subscriptions.push(vscode.commands.registerCommand(command, callback));
