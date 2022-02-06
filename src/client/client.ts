@@ -119,6 +119,17 @@ function launchSTeXServer(context: STeXContext) {
 	}
 	const jarPath = jarPathO; 
 	const portO = config.get<string>("mmtport");
+	if(!portO) { 
+		const message =
+		"Port not set";
+		context.outputChannel.appendLine(message);
+		vscode.window.showErrorMessage(message, context.openSettingsAction).then(choice => {
+	  		if (choice === context.openSettingsAction) {
+				vscode.commands.executeCommand("workbench.action.openSettings");
+	  		}
+		});
+  		return;
+	}
 
 	const serverProperties: string[] = config
 	  .get<string>("serverProperties")!
