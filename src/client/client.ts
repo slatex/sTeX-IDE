@@ -118,6 +118,7 @@ function launchSTeXServer(context: STeXContext) {
   		return;
 	}
 	const jarPath = jarPathO; 
+	const portO = config.get<string>("mmtport");
 
 	const serverProperties: string[] = config
 	  .get<string>("serverProperties")!
@@ -132,7 +133,7 @@ function launchSTeXServer(context: STeXContext) {
 		"-classpath",
 		jarPath,
 		"info.kwarc.mmt.stex.lsp.Main",
-		mathhubO
+		mathhubO,portO
 	  ];
 	const launchArgs = baseProperties
 		.concat(javaOptions);
