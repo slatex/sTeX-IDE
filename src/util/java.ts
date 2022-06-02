@@ -96,15 +96,15 @@ export function getJavaHome(): Promise<string> {
   }
 }
 
-import {STeXContext} from '../extension';
 import * as vscode from 'vscode';
+import { STeXContext } from "../shared/context";
 
 export function javaErr(context : STeXContext) {
 	const message =
 	"Unable to find Java home. To fix this problem, update the 'Java Home' setting to point to a Java 11 home directory";
   	context.outputChannel.appendLine(message);
-  	vscode.window.showErrorMessage(message, context.openSettingsAction).then(choice => {
-		if (choice === context.openSettingsAction) {
+  	vscode.window.showErrorMessage(message, "Open settings").then(choice => {
+		if (choice === "Open settings") {
 	  	vscode.commands.executeCommand("workbench.action.openSettings");
 		}
   	});
