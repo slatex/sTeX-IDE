@@ -35,7 +35,9 @@ export function handleClient(context: STeXContext) {
 		context.outputChannel.appendLine(s);
 	}
 
-	context.client.onRequest("stex/updateHTML",a => updateHTML(a as HTMLUpdateMessage));
+	context.client.onRequest("stex/updateHTML",a => {
+		updateHTML(a as HTMLUpdateMessage);
+	});
 	context.client.onRequest("stex/getMathHub",a => {
 		return {mathhub:getMathHub()};
 });

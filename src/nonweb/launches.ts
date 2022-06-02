@@ -113,5 +113,4 @@ function launchSTeXServer(context: STeXContext,javaHome: string) {
 
 	context.client = languageclient(serverOptions);
 	handleClient(context);
-	context.client.sendRequest(new language.RequestType("sTeX/setMathHub"),{mathhub:mathhubO});
 }
