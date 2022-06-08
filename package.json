@@ -3,8 +3,8 @@
 	"displayName": "sTeX",
 	"description": "",
 	"repository": {
-		"type":"git",
-		"url":"github:slatex/stex-IDE"
+		"type": "git",
+		"url": "github:slatex/stex-IDE"
 	},
 	"publisher": "KWARC",
 	"version": "0.0.1",
@@ -26,6 +26,14 @@
 				"command": "stexide.info",
 				"title": "sTeX Info",
 				"category": "sTeX"
+			},
+			{
+				"command": "stexide.mathhub.install",
+				"title": "Install",
+				"icon": {
+					"light": "img/cloud-download-light.svg",
+					"dark": "img/cloud-download-dark.svg"
+				}
 			}
 		],
 		"viewsContainers": {
@@ -33,18 +41,34 @@
 				{
 					"id": "stexide-viewcontainer",
 					"title": "sTeX Tools",
-					"icon": "img/stex.png"
+					"icon": "img/stex.svg"
 				}
 			]
 		},
 		"views": {
 			"stexide-viewcontainer": [
 				{
-					"id": "stexide-view",
+					"id": "stexidemathhub",
+					"name": "MathHub Repositories",
+					"icon": "img/stex.svg",
+					"contextualTitle": "MathHub Repositories",
+					"when": "latex-workshop:enabled"
+				},
+				{
+					"id": "stexidetools",
 					"name": "sTeX Tools",
 					"icon": "img/stex.png",
 					"contextualTitle": "sTeX Functionality",
 					"when": "latex-workshop:enabled"
+				}
+			]
+		},
+		"menus": {
+			"view/item/context": [
+				{
+					"command": "stexide.mathhub.install",
+					"group": "inline",
+					"when": "view == stexidemathhub && viewItem == remote"
 				}
 			]
 		},
@@ -61,6 +85,11 @@
 						"type": "string",
 						"default": "8090",
 						"markdownDescription": "The port at which MMT serves xhtml documents"
+					},
+					"stexide.remoteMathHub": {
+						"type": "string",
+						"default": "https://mmt.beta.vollki.kwarc.info/:sTeX",
+						"markdownDescription": "The URL of the remote MathHub server for repository management"
 					}
 				}
 			}
@@ -105,5 +134,7 @@
 		"vscode-wizard": "^0.2.20",
 		"websocket-stream": "^5.5.2"
 	},
-	"extensionDependencies": ["james-yu.latex-workshop"]
+	"extensionDependencies": [
+		"james-yu.latex-workshop"
+	]
 }

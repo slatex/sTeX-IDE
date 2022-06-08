@@ -9,7 +9,6 @@ let stexc : STeXContext;
 
 export function activate(context: vscode.ExtensionContext) {
 	stexc = new STeXContext(context);
-	registerCommands(stexc);
 	if (getMathHub() && getJarpath()) {
 		launchLocal(stexc);
 	} else {

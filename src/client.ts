@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import { STeXContext } from './shared/context';
 import { HTMLUpdateMessage, updateHTML } from './shared/viewer';
 import { getMathHub } from './nonweb/setup';
+import { registerCommands } from './shared/commands';
 
 
 
@@ -38,9 +39,21 @@ export function handleClient(context: STeXContext) {
 	context.client.onRequest("stex/updateHTML",a => {
 		updateHTML(a as HTMLUpdateMessage);
 	});
-	context.client.onRequest("stex/getMathHub",a => {
-		return {mathhub:getMathHub()};
-});
+	context.client.onNotification("stex/updateMathHub",a => {
+		context.mathhub?.updateRemote(context);
+	});
+	interface MathHubMessage {
+		mathhub:string,
+		remote:string
+	}
+	context.client.sendNotification(new language.ProtocolNotificationType<MathHubMessage,void>("sTeX/setMathHub"),{
+		mathhub:getMathHub(),
+		remote:vscode.workspace.getConfiguration("stexide").get("remoteMathHub")
+	})
+	  .then(()=>{
+		  registerCommands(context);
+	  });
+};
 
 	//context.client.onReady().then(_ => {if (context.client) {
 		//context.client.onRequest("stex/getMainFile",_ => tex.getMainDoc());
@@ -48,4 +61,3 @@ export function handleClient(context: STeXContext) {
 	//}});
 	// client.onRequest("textDocument/semanticHighlighting",outputChannel.appendLine);
 	//client.onNotification("textDocument/semanticHighlighting",outputChannel.appendLine);
-}

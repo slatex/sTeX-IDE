@@ -1,6 +1,7 @@
 import * as weblanguage from 'vscode-languageclient/browser';
 import * as language from 'vscode-languageclient/node';
 import * as vscode from 'vscode';
+import { MathHubTreeProvider } from './mathhub';
 
 let outputChannel : vscode.OutputChannel;
 function getoutputChannel() {
@@ -19,4 +20,5 @@ export class STeXContext {
 	constructor(context: vscode.ExtensionContext) {
 		this.vsc = context;
 	}
+	mathhub? : MathHubTreeProvider;
 }
