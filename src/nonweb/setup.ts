@@ -13,7 +13,8 @@ export function getMathHub(): string | undefined {
     if (mathhub) {
         return mathhub;
     } else {
-        let file = process.env.HOME + "/.stex/mathhub.path";
+        let filepath = (process.env.HOME?process.env.HOME:process.env.USERPROFILE) + "/.stex";
+        let file = filepath + "/mathhub.path";
         if (fs.existsSync(file)) {
             return fs.readFileSync(file).toString().trim();
         } else {
@@ -28,7 +29,11 @@ export function getJarpath() : string | undefined {
 }
 
 function setMathHub(path : string) {
-    let file = process.env.HOME + "/.stex/mathhub.path";
+    let filepath = (process.env.HOME?process.env.HOME:process.env.USERPROFILE) + "/.stex";
+    let file = filepath + "/mathhub.path";
+    if (!fs.existsSync(filepath)) {
+        fs.mkdirSync(filepath);
+    } 
     fs.writeFileSync(file,path);
 }
 
@@ -63,8 +68,8 @@ async function getMMTVersion(stexc: STeXContext,jarpath: string): Promise<string
 
 export function setup(stexc: STeXContext) {
     let jarpath = getJarpath();
-	if (!jarpath || jarpath === "") {
-		let mathhub = getMathHub();
+    let mathhub = getMathHub();
+	if ((!jarpath || jarpath === "") || !mathhub) {
         let validjar = false;
         let currentjar = "";
 		let def = {
@@ -83,6 +88,7 @@ export function setup(stexc: STeXContext) {
 					childFields:[{
 						id:"jarpath",
 						label:"MMT.jar",
+						initialValue:jarpath,
 						type:"file-picker",
                         description:""
 					}]
