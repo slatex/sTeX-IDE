@@ -63,9 +63,7 @@ export class MHTreeItem extends vscode.TreeItem {
         if (asgroup.children !== undefined) {
             cv = asgroup.isLocal? "repogroup": "remote";
             iconPath = asgroup.isLocal ? new vscode.ThemeIcon("library") : path.join(__filename,"..","..","img","MathHub.svg");
-            if (asgroup.isLocal) {
-                state = vscode.TreeItemCollapsibleState.Collapsed;
-            }
+            state = vscode.TreeItemCollapsibleState.Collapsed;
         } else {
             cv = mh.isLocal? "repository": "remote";
             iconPath = asgroup.isLocal ? new vscode.ThemeIcon("book") : path.join(__filename,"..","..","img","MathHub.svg");
@@ -113,7 +111,9 @@ export class MathHubTreeProvider implements vscode.TreeDataProvider<MHTreeItem|F
     }
 
     async getChildren(element?: MHTreeItem|FileEntry): Promise<(MHTreeItem|FileEntry)[]> {
-        if (!element) {return Promise.resolve(this.roots);}
+        if (!element) {
+            return Promise.resolve(this.roots);
+        }
         if (element instanceof MHTreeItem) {
             if ((<RepoGroup>element.mh).children !== undefined) {
                 return Promise.resolve(element.children);
@@ -194,9 +194,9 @@ export class MathHubTreeProvider implements vscode.TreeDataProvider<MHTreeItem|F
         this._onDidChangeTreeData.fire();
     }
     updateRemote(context: STeXContext) {
-        this.roots = [];
         let ret = context.client?.sendRequest(new ProtocolRequestType0<MHEntry[],any,any,any>("sTeX/getMathHubContent"));
         ret?.then(ls => {
+            this.roots = [];
             for (const mh of ls) {
                 let ti = new MHTreeItem(mh);
                 this.roots.push(ti);
