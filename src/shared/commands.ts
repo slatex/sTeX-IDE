@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as language from 'vscode-languageclient/node';
 import { STeXContext } from './context';
 import { MathHubTreeProvider, MHTreeItem } from './mathhub';
+import { SearchPanel } from './search';
 
 interface InstallMessage {
 	archive: string
@@ -19,4 +20,5 @@ export function registerCommands(context: STeXContext) {
 		context.client?.sendNotification(new language.ProtocolNotificationType<InstallMessage,void>("sTeX/installArchive"),{archive:(<MHTreeItem>arg).path});
 	}));
 	vscode.window.registerTreeDataProvider("stexidemathhub",new MathHubTreeProvider(context));
+	vscode.window.registerWebviewViewProvider("stexidesearch",new SearchPanel(context));
 }

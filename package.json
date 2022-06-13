@@ -55,9 +55,17 @@
 					"when": "latex-workshop:enabled"
 				},
 				{
+					"id": "stexidesearch",
+					"type": "webview",
+					"name": "sTeX Search",
+					"icon": "img/stex.svg",
+					"contextualTitle": "sTeX Search",
+					"when": "latex-workshop:enabled"
+				},
+				{
 					"id": "stexidetools",
 					"name": "sTeX Tools",
-					"icon": "img/stex.png",
+					"icon": "img/stex.svg",
 					"contextualTitle": "sTeX Functionality",
 					"when": "latex-workshop:enabled"
 				}
@@ -128,6 +136,8 @@
 		"webpack-cli": "^4.9.2"
 	},
 	"dependencies": {
+		"@vscode/codicons": "^0.0.30",
+		"@vscode/webview-ui-toolkit": "^1.0.0",
 		"locate-java-home": "^1.1.2",
 		"shell-quote": "^1.7.3",
 		"vscode-languageclient": "^8.0.1",
