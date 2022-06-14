@@ -8,6 +8,10 @@ interface InstallMessage {
 	archive: string
 }
 
+interface BuildMessage {
+	file:string
+}
+
 export function registerCommands(context: STeXContext) {
     context.vsc.subscriptions.push(vscode.commands.registerCommand('stexide.info', () => {
 		vscode.window.showInformationMessage('Hello World from sTeXWeb!');
@@ -21,4 +25,9 @@ export function registerCommands(context: STeXContext) {
 	}));
 	vscode.window.registerTreeDataProvider("stexidemathhub",new MathHubTreeProvider(context));
 	vscode.window.registerWebviewViewProvider("stexidesearch",new SearchPanel(context));
+
+	context.vsc.subscriptions.push(vscode.commands.registerCommand("stexide.build", arg => {
+		context.client?.sendNotification(new language.ProtocolNotificationType<BuildMessage,void>("sTeX/buildFile"),
+			{file:(<vscode.Uri>arg).toString()});
+	}));
 }

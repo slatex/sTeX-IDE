@@ -23,6 +23,14 @@
 	"contributes": {
 		"commands": [
 			{
+				"command": "stexide.build",
+				"title": "Build PDF/XHTML/OMDoc",
+				"icon": {
+					"light": "img/mmt_light.svg",
+					"dark": "img/mmt_dark.svg"
+				}
+			},
+			{
 				"command": "stexide.info",
 				"title": "sTeX Info",
 				"category": "sTeX"
@@ -77,6 +85,12 @@
 					"command": "stexide.mathhub.install",
 					"group": "inline",
 					"when": "view == stexidemathhub && viewItem == remote"
+				}
+			],
+			"editor/title": [
+				{
+					"command": "stexide.build",
+					"when": "resourceExtname == .tex"
 				}
 			]
 		},
