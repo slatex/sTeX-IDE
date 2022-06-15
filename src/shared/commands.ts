@@ -4,7 +4,7 @@ import { STeXContext } from './context';
 import { MathHubTreeProvider, MHTreeItem } from './mathhub';
 import { SearchPanel } from './search';
 
-interface InstallMessage {
+export interface InstallMessage {
 	archive: string
 }
 

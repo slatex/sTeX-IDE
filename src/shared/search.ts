@@ -1,12 +1,16 @@
 import * as vscode from 'vscode';
+import * as language from 'vscode-languageclient/node';
 import { CancellationToken, ProtocolRequestType, ProtocolRequestType0 } from 'vscode-languageclient';
 import { STeXContext } from './context';
+import { InstallMessage } from './commands';
+import { MHTreeItem } from './mathhub';
 
 interface LSPSearchResult {
   archive:String;
   sourcefile:String;
   local:Boolean;
   html:String;
+  fileuri:String|null;
 }
 interface LSPSearchResults {
   locals:LSPSearchResult[];
@@ -61,27 +65,35 @@ export class SearchPanel implements vscode.WebviewViewProvider {
             ret?.then(res => {
               var loc : string = "";
               res.locals.forEach(l => {
-                loc += htmlResult(l);
+                loc += htmlResult(l,'openFile("' + l.fileuri + '")',"open");
               });
               var rem : string = "";
               res.remotes.forEach(l => {
-                rem += htmlResult(l);
+                rem += htmlResult(l,'installArchive("' + l.archive + '")',"install");
               });
               webviewView.webview.postMessage({html:htmlResults(loc,rem)});
             });
+          case "open":
+            vscode.window.showTextDocument(vscode.Uri.parse(msg.uri));
+          case "install": 
+            if (this.scontext.mathhub) {this.scontext.mathhub.roots = []; this.scontext.mathhub.update();}
+            this.scontext.client?.sendNotification(new language.ProtocolNotificationType<InstallMessage,void>("sTeX/installArchive"),{archive:msg.archive});
         }
       });
-      webviewView.webview.html = searchhtml(tkuri,styleuri,cssuri,webviewView.webview.cspSource);
+      webviewView.webview.html = searchhtml(tkuri,cssuri);
     }
 }
 
-function htmlResult(res:LSPSearchResult) {
+function htmlResult(res:LSPSearchResult,link:string,label:string) {
   return `
-<tr><td style="text-align:left;"><i><b>[${res.archive}]${res.sourcefile}</b></i></td></tr>
+<tr><td><table width="100%"><tr>
+  <td style="text-align:left;"><i><b>[${res.archive}]${res.sourcefile}</b></i><td>
+  <td style="text-align:right;">
+    <vscode-button onclick='${link}'>${label}</vscode-button>
+  <td>
+</tr></table></td></tr>
 <tr><td style="border:1px solid;">
-  <div style="display:flex;flex-direction:column;width:100%;max-width:534pt;overflow-x:scroll;">
-    ${res.html}
-  </div>
+  <iframe width="100%" src="${res.html}"></iframe>
 </td></tr>`;
 }
 
@@ -99,249 +111,12 @@ function htmlResults(locals : string,remotes:string) { return `
   <tr><td style="border:1px solid">narf</td></tr>
 */
 
-function searchhtml(tkuri:vscode.Uri,styleuri:vscode.Uri,cssuri:vscode.Uri,cspsource:string) { return `
+function searchhtml(tkuri:vscode.Uri,cssuri:vscode.Uri) { return `
 <!DOCTYPE html>
 <html>
 <head>
-  <!--<link href="${styleuri}" rel="stylesheet"/>-->
   <link href="${cssuri}" rel="stylesheet"/>
   <script type="module" src="${tkuri}"></script>
-  <script type="text/javascript" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/mml-chtml.js">&#8205;</script>
-  <style>
-.definiendum {
-    color: #00BB00;
-    font-weight: bold;
-}
-.varcomp {
-    color: #828282;
-}
-.symcomp {
-    color: #0e90d2;
-}
-.scaledbody {
-    transform: scale(1.5);
-    transform-origin: top;
-}
-.frame {
-    border:2px solid black;
-    display: flex;
-    margin: 5px auto;
-    background-color: white;
-}
-.solution {
-
-}
-body {
-    /*font-family: Noto Serif, serif, STIXgeneral, Times, Symbol, cmr10, CMSY10, CMEX10, serif*/;
-    font-family: STIXgeneral, Times, Symbol, cmr10, CMSY10, CMEX10, serif;
-    margin:auto;
-}
-
-.resetfont {
-    /*font-family: Noto Serif, serif, STIXgeneral, Times, Symbol, cmr10, CMSY10, CMEX10, serif*/;
-    font-family: STIXgeneral, Times, Symbol, cmr10, CMSY10, CMEX10, serif;
-    font-style: normal;
-    font-weight: normal;
-    font-variant: normal;
-}
-
-.monospaced {
-    font-family: FreeMono, Courier New, monospace;
-}
-
-.blackboard {
-    font-family: msbm;
-}
-
-.script {
-    font-family: URW Chancery L, cursive;
-}
-
-.sansserif {
-    font-family: sans-serif;
-}
-
-.body {
-    position: relative;
-
-    color: hsl(0, 5%, 10%);
-    background-color: hsl(210, 20%, 98%);
-
-    text-rendering: optimizeLegibility;
-    align-content: inherit;
-    justify-content: start;
-    grid-auto-flow:row;
-    text-align:justify;
-    display: flex;
-    flex-direction: column;
-}
-
-span {
-    display:inherit;
-    flex-direction: inherit;
-}
-.paragraph > span {
-    display:inline;
-}
-.displaymath {
-    display:block;
-    text-align:center;
-}
-.vskip {
-    display: inline-block;
-    line-height:0pt
-}
-.reftarget {
-}
-.vrule {
-    /*align-self:end;*/
-    display:inline-block;
-}
-.hrule {
-    /*align-self:start;*/
-    display:block;
-}
-a {
-    color: inherit;
-    text-decoration: inherit;
-    display: inline-block;
-    pointer-events: all;
-}
-.raise {
-    position: relative;
-    display: inline-block;
-}
-.moveright {
-    position: relative;
-    display: inline-block;
-}
-.paragraph {
-    hyphens: auto;
-    -webkit-hyphens: auto;
-    -moz-hyphens: auto;
-    margin-top: 0;
-    margin-bottom: 0;
-    max-width:100%;
-    justify-content:inherit;
-    align-content:inherit;
-}
-hr {
-    width: 100%;
-}
-.vbox {
-    display: inline-flex;
-    flex-direction: column;
-    flex-wrap: nowrap;
-    align-content: center;
-    justify-content: flex-end;
-    width:max-content;
-    max-width:100%;
-    text-align:justify;
-    align-self: center;
-}
-.hbox {
-    display: inline-flex;
-    flex-direction: row;
-    justify-content: flex-start;
-    align-content: inherit;
-    align-items: baseline;
-    width:max-content;
-    height:max-content;
-    max-width:100%;
-}
-.matrix {
-    display: inline-flex;
-}
-.hskip {
-    display: inline-block;
-    width: 0%;
-    height: 0%;
-}
-.indent {
-    display: inline-block;
-    width: 0%;
-    height: 0%;
-}
-.vskip {
-    width: 0%;
-    height: 0%;
-}
-foreignObject {
-}
-.foreign {
-    display:flex;
-    width:100%;
-    height:100%;
-    align-items:center;
-    justify-content:center;
-    transform: scale(1,-1);
-}
-table {
-    border-spacing:0;
-    white-space:nowrap;
-    width:max-content;
-    height:max-content;
-    /*display:initial;*/
-}
-td {
-    padding:0;
-}
-.vfil {
-    margin-bottom: 10px;
-    width: 0%;
-    height: 0%;
-}
-.vfill {
-    margin-bottom: 30px;
-    width: 0%;
-    height: 0%;
-}
-.HFil {
-    margin-left: 10px;
-    width: 0%;
-    height: 0%;
-    display: inline-block;
-}
-.Hss {
-    width: 0%;
-    height: 0%;
-    display: inline-block;
-}
-.hkern {
-    display: inline-block;
-}
-.HFill {
-    margin-left: 30px;
-    width: 0%;
-    height: 0%;
-    display: inline-block;
-}
-.br {
-    flex-basis:100%;
-    height:0;
-}
-math {
-    width:max-content;
-    height:max-content;
-    /*font-size:85%;*/
-}
-.displaymath {
-    align-self: center;
-}
-.displaymathcontainer {
-    text-align:center;
-    display:flex;
-    justify-content:center;
-    align-self:center;
-}
-
-.font-normal {
-    font-family: STIXgeneral, Times, Symbol, cmr10, CMSY10, CMEX10, serif;
-    font-style: normal;
-    font-weight: normal;
-    font-variant: normal;
-}
-  </style>
 </head>
 <body>
 <vscode-text-field size="50" id="searchfield">Search sTeX Content<span slot="start" class="codicon codicon-search"></span></vscode-text-field>
@@ -356,28 +131,6 @@ math {
 </div>
 
 <script>
-let oldmj = MathJax;
-MathJax = {
-  startup: {
-      ready() {
-          MathJax.startup.defaultReady();
-          const MML = MathJax.startup.document.inputJax[0];
-          const adaptor = MML.adaptor;
-          MML.mmlFilters.add(function ({math, document, data}) {
-              for (const mtext of data.querySelectorAll('mtext')) {
-                  const child = mtext.firstElementChild;
-                  if (child && child.namespaceURI === 'http://www.w3.org/1999/xhtml') {
-                      const semantics = adaptor.node('semantics', {}, [
-                          adaptor.node('annotation-xml', {encoding: 'application/xhtml+xml'}, mtext.childNodes)
-                      ]);
-                      mtext.parentNode.replaceChild(semantics, mtext);
-                  }
-              }
-          });
-      }
-  }
-}
-
 const vscode = acquireVsCodeApi();
 let searchfield = document.getElementById("searchfield");
 let resultfield = document.getElementById("stex-searchresults");
@@ -399,10 +152,21 @@ function dosearch() {
     searchtype: searchtype.value
   });
 }
+function openFile(s) {
+  vscode.postMessage({
+    command: "open",
+    uri:s
+  });
+}
+function installArchive(s) {
+  vscode.postMessage({
+    command: "install",
+    archive:s
+  });
+}
 window.addEventListener('message', event => {
   const msg = event.data;
   resultfield.innerHTML = msg.html;
-  oldmj.typeset();
 })
 </script>
 
