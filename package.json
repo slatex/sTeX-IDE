@@ -21,6 +21,34 @@
 	],
 	"main": "./dist/extension.js",
 	"contributes": {
+		"semanticTokenTypes": [
+			{
+				"id": "stex-module",
+				"superType": "namespace",
+				"description": "An sTeX Module"
+			},
+			{
+				"id": "stex-symdecl",
+				"superType": "keyword",
+				"description": "An sTeX symbol or notation declaration"
+			},
+			{
+				"id": "stex-constant",
+				"superType": "string",
+				"description": "An sTeX Symbol"
+			},
+			{
+				"id": "stex-variable",
+				"superType": "variable",
+				"description": "An sTeX Variable"
+			}
+		],
+		"semanticTokenModifiers": [
+			{
+				"id": "stex-deprecatedmodule",
+				"description": "This module is deprecated"
+			}
+		],
 		"commands": [
 			{
 				"command": "stexide.build",
