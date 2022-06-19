@@ -2,6 +2,7 @@
 	"name": "stexide",
 	"displayName": "sTeX",
 	"description": "",
+	"icon":"img/stex.png",
 	"repository": {
 		"type": "git",
 		"url": "github:slatex/stex-IDE"

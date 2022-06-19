@@ -32,23 +32,20 @@ export class SearchPanel implements vscode.WebviewViewProvider {
       };
       const tkuri = webviewView.webview.asWebviewUri(vscode.Uri.joinPath(
         this.scontext.vsc.extensionUri,
-          "node_modules",
+          /*"node_modules",
           "@vscode",
           "webview-ui-toolkit",
           "dist",
-          "toolkit.js"
-      ));
-      const styleuri = webviewView.webview.asWebviewUri(vscode.Uri.joinPath(
-        this.scontext.vsc.extensionUri,
-          "media",
-          "styles.css"
+          "toolkit.js"*/
+          "resources","toolkit.min.js"
       ));
       const cssuri = webviewView.webview.asWebviewUri(vscode.Uri.joinPath(
         this.scontext.vsc.extensionUri,
-          "node_modules",
+          /*"node_modules",
           "@vscode/codicons",
           "dist",
-          "codicon.css"
+          "codicon.css"*/
+          "resources","codicon.css"
       ));
       webviewView.webview.onDidReceiveMessage(msg => {
         switch (msg.command) {
@@ -64,13 +61,17 @@ export class SearchPanel implements vscode.WebviewViewProvider {
             );
             ret?.then(res => {
               var loc : string = "";
-              res.locals.forEach(l => {
-                loc += htmlResult(l,'openFile("' + l.fileuri + '")',"open");
-              });
+              if (res.locals.length > 0) {
+                res.locals.forEach(l => {
+                  loc += htmlResult(l,'openFile("' + l.fileuri + '")',"open");
+                });
+              }
               var rem : string = "";
-              res.remotes.forEach(l => {
-                rem += htmlResult(l,'installArchive("' + l.archive + '")',"install");
-              });
+              if (res.remotes.length > 0) {
+                res.remotes.forEach(l => {
+                  rem += htmlResult(l,'installArchive("' + l.archive + '")',"install");
+                });
+              }
               webviewView.webview.postMessage({html:htmlResults(loc,rem)});
             });
           case "open":
@@ -80,7 +81,8 @@ export class SearchPanel implements vscode.WebviewViewProvider {
             this.scontext.client?.sendNotification(new language.ProtocolNotificationType<InstallMessage,void>("sTeX/installArchive"),{archive:msg.archive});
         }
       });
-      webviewView.webview.html = searchhtml(tkuri,cssuri);
+      this.scontext.outputChannel.appendLine("Values: " + tkuri.toString() + ", " + cssuri.toString());
+      webviewView.webview.html = searchhtml(tkuri,cssuri,true);
     }
 }
 
@@ -111,25 +113,42 @@ function htmlResults(locals : string,remotes:string) { return `
   <tr><td style="border:1px solid">narf</td></tr>
 */
 
-function searchhtml(tkuri:vscode.Uri,cssuri:vscode.Uri) { return `
+function searchhtml(tkuri:vscode.Uri,cssuri:vscode.Uri,usevscui:boolean) { return `
 <!DOCTYPE html>
 <html>
 <head>
   <link href="${cssuri}" rel="stylesheet"/>
   <script type="module" src="${tkuri}"></script>
 </head>
-<body>
-<vscode-text-field size="50" id="searchfield">Search sTeX Content<span slot="start" class="codicon codicon-search"></span></vscode-text-field>
+<body>` + (usevscui?
+`<vscode-text-field size="50" id="searchfield">Search sTeX Content<span slot="start" class="codicon codicon-search"></span></vscode-text-field>
 <br/>
 <vscode-radio-group id="searchtype">
-  <vscode-radio id="searchall" value="all" checked/>Anywhere</vscode-radio>
-  <vscode-radio id="searchdefs" value="defs"/>Definitions</vscode-radio>
-  <vscode-radio id="searchass" value="ass"/>Assertions</vscode-radio>
-  <vscode-radio id="searchex" value="ex"/>Examples</vscode-radio>
-</vscode-radio-group>
-<div id="stex-searchresults">
-</div>
+  <vscode-radio id="searchall" value="all" checked>Anywhere</vscode-radio>
+  <vscode-radio id="searchdefs" value="defs">Definitions</vscode-radio>
+  <vscode-radio id="searchass" value="ass">Assertions</vscode-radio>
+  <vscode-radio id="searchex" value="ex">Examples</vscode-radio>
+</vscode-radio-group>`:`
+<form>
+  <label for="searchfield">Search sTeX Content</label>
+  <input type="text" id="searchfield"/>
+</form>
+  <br/>
+<form>
+  <input type="radio" name="searchtype" id="searchall" value="all" checked onclick="document.getElementById('searchtype').value='all';"/>
+  <label for="searchall">Anywhere</label>
+  <input type="radio" name="searchtype" id="searchdefs" value="defs" onclick="document.getElementById('searchtype').value='defs';"/>
+  <label for="searchdefs">Definitions</label>
+  <input type="radio" name="searchtype" id="searchass" value="ass" onclick="document.getElementById('searchtype').value='ass';"/>
+  <label for="searchass">Assertions</label>
+  <input type="radio" name="searchtype" id="searchex" value="ex" onclick="document.getElementById('searchtype').value='ex';"/>
+  <label for="searchex">Examples</label>
+  <input type="submit" id="searchtype" value="all" style="display:none;"/>
+</form>
+`) +
 
+`<div id="stex-searchresults">
+</div>
 <script>
 const vscode = acquireVsCodeApi();
 let searchfield = document.getElementById("searchfield");
