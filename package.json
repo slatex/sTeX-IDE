@@ -16,9 +16,7 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onCommand:stexide.info",
-		"onLanguage:tex",
-		"onLanguage:latex"
+		"workspaceContains:**/*.tex"
 	],
 	"main": "./dist/extension.js",
 	"contributes": {
@@ -101,6 +99,7 @@
 				},
 				{
 					"id": "stexidetools",
+					"type": "webview",
 					"name": "sTeX Tools",
 					"icon": "img/stex.svg",
 					"contextualTitle": "sTeX Functionality",

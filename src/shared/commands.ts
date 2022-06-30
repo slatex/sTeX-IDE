@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as language from 'vscode-languageclient/node';
+import { CancellationToken, NotificationType0 } from 'vscode-languageclient/node';
 import { STeXContext } from './context';
 import { MathHubTreeProvider, MHTreeItem } from './mathhub';
 import { SearchPanel } from './search';
@@ -25,9 +26,72 @@ export function registerCommands(context: STeXContext) {
 	}));
 	vscode.window.registerTreeDataProvider("stexidemathhub",new MathHubTreeProvider(context));
 	vscode.window.registerWebviewViewProvider("stexidesearch",new SearchPanel(context));
+	vscode.window.registerWebviewViewProvider("stexidetools",new ToolsPanel(context));
 
 	context.vsc.subscriptions.push(vscode.commands.registerCommand("stexide.build", arg => {
 		context.client?.sendNotification(new language.ProtocolNotificationType<BuildMessage,void>("sTeX/buildFile"),
 			{file:(<vscode.Uri>arg).toString()});
 	}));
+}
+
+
+class ToolsPanel implements vscode.WebviewViewProvider {
+    constructor(private scontext:STeXContext) {}
+    resolveWebviewView(webviewView: vscode.WebviewView, context: vscode.WebviewViewResolveContext, token: CancellationToken): Thenable<void> | void {
+      webviewView.webview.options = {
+        enableScripts: true,
+        enableForms:true     
+      };
+      const tkuri = webviewView.webview.asWebviewUri(vscode.Uri.joinPath(
+        this.scontext.vsc.extensionUri,
+          /*"node_modules",
+          "@vscode",
+          "webview-ui-toolkit",
+          "dist",
+          "toolkit.js"*/
+          "resources","toolkit.min.js"
+      ));
+      const cssuri = webviewView.webview.asWebviewUri(vscode.Uri.joinPath(
+        this.scontext.vsc.extensionUri,
+          /*"node_modules",
+          "@vscode/codicons",
+          "dist",
+          "codicon.css"*/
+          "resources","codicon.css"
+      ));
+      webviewView.webview.onDidReceiveMessage(msg => {
+        switch (msg.command) {
+          case "quickparse":
+			this.scontext.client?.sendNotification(new NotificationType0("sTeX/parseWorkspace"));
+		}
+      });
+      //this.scontext.outputChannel.appendLine("Values: " + tkuri.toString() + ", " + cssuri.toString());
+      webviewView.webview.html = toolhtml(tkuri,cssuri);
+    }
+}
+
+
+function toolhtml(tkuri:vscode.Uri,cssuri:vscode.Uri) { return `
+<!DOCTYPE html>
+<html>
+<head>
+  <link href="${cssuri}" rel="stylesheet"/>
+  <script type="module" src="${tkuri}"></script>
+</head>
+<body>
+  <vscode-button onclick="quickparse_workspace()">Quickparse Workspace</vscode-button>
+  
+<script>
+const vscode = acquireVsCodeApi();
+
+function quickparse_workspace() {
+  vscode.postMessage({
+    command: "quickparse"
+  });
+}
+</script>
+
+</body>
+</html>
+        `;
 }

@@ -81,8 +81,8 @@ export class SearchPanel implements vscode.WebviewViewProvider {
             this.scontext.client?.sendNotification(new language.ProtocolNotificationType<InstallMessage,void>("sTeX/installArchive"),{archive:msg.archive});
         }
       });
-      this.scontext.outputChannel.appendLine("Values: " + tkuri.toString() + ", " + cssuri.toString());
-      webviewView.webview.html = searchhtml(tkuri,cssuri,true);
+      //this.scontext.outputChannel.appendLine("Values: " + tkuri.toString() + ", " + cssuri.toString());
+      webviewView.webview.html = searchhtml(tkuri,cssuri);
     }
 }
 
@@ -113,41 +113,23 @@ function htmlResults(locals : string,remotes:string) { return `
   <tr><td style="border:1px solid">narf</td></tr>
 */
 
-function searchhtml(tkuri:vscode.Uri,cssuri:vscode.Uri,usevscui:boolean) { return `
+function searchhtml(tkuri:vscode.Uri,cssuri:vscode.Uri) { return `
 <!DOCTYPE html>
 <html>
 <head>
   <link href="${cssuri}" rel="stylesheet"/>
   <script type="module" src="${tkuri}"></script>
 </head>
-<body>` + (usevscui?
-`<vscode-text-field size="50" id="searchfield">Search sTeX Content<span slot="start" class="codicon codicon-search"></span></vscode-text-field>
+<body>
+<vscode-text-field size="50" id="searchfield">Search sTeX Content<span slot="start" class="codicon codicon-search"></span></vscode-text-field>
 <br/>
 <vscode-radio-group id="searchtype">
   <vscode-radio id="searchall" value="all" checked>Anywhere</vscode-radio>
   <vscode-radio id="searchdefs" value="defs">Definitions</vscode-radio>
   <vscode-radio id="searchass" value="ass">Assertions</vscode-radio>
   <vscode-radio id="searchex" value="ex">Examples</vscode-radio>
-</vscode-radio-group>`:`
-<form>
-  <label for="searchfield">Search sTeX Content</label>
-  <input type="text" id="searchfield"/>
-</form>
-  <br/>
-<form>
-  <input type="radio" name="searchtype" id="searchall" value="all" checked onclick="document.getElementById('searchtype').value='all';"/>
-  <label for="searchall">Anywhere</label>
-  <input type="radio" name="searchtype" id="searchdefs" value="defs" onclick="document.getElementById('searchtype').value='defs';"/>
-  <label for="searchdefs">Definitions</label>
-  <input type="radio" name="searchtype" id="searchass" value="ass" onclick="document.getElementById('searchtype').value='ass';"/>
-  <label for="searchass">Assertions</label>
-  <input type="radio" name="searchtype" id="searchex" value="ex" onclick="document.getElementById('searchtype').value='ex';"/>
-  <label for="searchex">Examples</label>
-  <input type="submit" id="searchtype" value="all" style="display:none;"/>
-</form>
-`) +
-
-`<div id="stex-searchresults">
+</vscode-radio-group>
+<div id="stex-searchresults">
 </div>
 <script>
 const vscode = acquireVsCodeApi();
