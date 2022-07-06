@@ -25,8 +25,14 @@ export class HTMLUpdateMessage {
 export function updateHTML(msg : HTMLUpdateMessage) {
     viewer().then(() => {
         if (webviewer) {
-            webviewer.webview.html = '<iframe width="100%" height="650px" src="' +
-              msg.html + '" title="Preview" style="background:white"></iframe>';
+            webviewer.webview.html = 'Loading';
+        }
+    }).then(() => {
+        if (webviewer) {
+            webviewer.webview.html = `
+            <!DOCTYPE html>
+            <html><head></head><body><iframe width="100%" height="650px" src="` +
+              msg.html + '" title="Preview" style="background:white"></iframe></body></html>';
         }
     });
 }
