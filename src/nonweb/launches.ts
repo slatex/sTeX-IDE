@@ -3,7 +3,7 @@ import * as language from 'vscode-languageclient/node';
 import * as vscode from 'vscode';
 import * as path from "path";
 import { handleClient, languageclient} from "../client";
-import { getJavaHome, getJavaOptions, javaErr } from "../util/java";
+import { getJavaOptions } from "../util/java";
 import { STeXContext } from "../shared/context";
 import { getMathHub } from "./setup";
 
@@ -29,7 +29,7 @@ export function launchRemote(context: STeXContext) {
 
 
 export function launchLocal(context: STeXContext) {
-	getJavaHome().catch(err => javaErr(context))
+	/*getJavaHome().catch(err => javaErr(context))
 	.then(javaHome => {
 		console.log("javaHome: " + javaHome);
 		if (!javaHome) {
@@ -37,16 +37,18 @@ export function launchLocal(context: STeXContext) {
 			return;
 		}
 		launchSTeXServer(context,javaHome);
-	});
+	});*/
+  launchSTeXServer(context);
   vscode.commands.executeCommand("setContext", "stex:enabled", true);
 }
 
-function launchSTeXServer(context: STeXContext,javaHome: string) {
+function launchSTeXServer(context: STeXContext/*,javaHome: string*/) {
 
 	const config = vscode.workspace.getConfiguration("stexide");
-  
+    /*
 	context.outputChannel.appendLine(`Java home: ${javaHome}`);
 	const javaPath = path.join(javaHome, "bin", "java");
+	 */
 	const jarPathO = config.get<string>("jarpath");
 	if(!jarPathO) { 
 		const message =
@@ -85,11 +87,6 @@ function launchSTeXServer(context: STeXContext,javaHome: string) {
 		});
   		return;
 	}
-
-	/*const serverProperties: string[] = config
-	  .get<string>("serverProperties")!
-	  .split(" ")
-	  .filter(e => e.length > 0);*/
 	  
   
 	const javaOptions = getJavaOptions(context.outputChannel);
@@ -107,8 +104,8 @@ function launchSTeXServer(context: STeXContext,javaHome: string) {
 	context.outputChannel.appendLine("Initializing sTeX LSP Server");
 
 	const serverOptions: language.ServerOptions = {
-		run: { command: javaPath, args: launchArgs },
-		debug: { command: javaPath, args: launchArgs }
+		run: { command: "java", args: launchArgs },
+		debug: { command: "java", args: launchArgs }
 	};
 
 	context.client = languageclient(serverOptions);

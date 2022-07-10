@@ -38,7 +38,7 @@ function setMathHub(path : string) {
 }
 
 async function getMMTVersion(stexc: STeXContext,jarpath: string): Promise<string | undefined> {
-	return await getJavaHome().catch(err => {
+	/*return await getJavaHome().catch(err => {
         javaErr(stexc);
         return undefined;
     })
@@ -47,10 +47,10 @@ async function getMMTVersion(stexc: STeXContext,jarpath: string): Promise<string
             javaErr(stexc);
             return undefined;
         }
-	    let javaPath = path.join(javaHome, "bin", "java");
+	    let javaPath = path.join(javaHome, "bin", "java");*/
         let out = "";
         let p = new Promise((resolve,reject) => {
-            let e = exec(javaPath + " -classpath \"" + jarpath + "\" info.kwarc.mmt.api.frontend.Run \"--version\"").stdout?.on('data',data => {
+            let e = exec("java -classpath \"" + jarpath + "\" info.kwarc.mmt.api.frontend.Run \"--version\"").stdout?.on('data',data => {
                 out += data;
             });
             e?.addListener("error", reject);
@@ -63,7 +63,7 @@ async function getMMTVersion(stexc: STeXContext,jarpath: string): Promise<string
         } else {
             return out;
         }
-    });
+   // });
 }
 
 export function setup(stexc: STeXContext) {
