@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as language from 'vscode-languageclient/node';
-import { CancellationToken, NotificationType0 } from 'vscode-languageclient/node';
+import { CancellationToken, integer, NotificationType0 } from 'vscode-languageclient/node';
 import { STeXContext } from './context';
 import { MathHubTreeProvider, MHTreeItem } from './mathhub';
 import { SearchPanel } from './search';
@@ -20,6 +20,12 @@ export function registerCommands(context: STeXContext) {
 	context.vsc.subscriptions.push(vscode.commands.registerCommand("stexide.openFile", arg => {
 		vscode.window.showTextDocument(arg);
 	}));
+	/*context.vsc.subscriptions.push(vscode.commands.registerCommand("stexide.insertCode", (str:string,startl:integer,startch:integer,endl:integer,endch:integer) => 
+  {
+		vscode.window.activeTextEditor?.edit(eb => eb.replace(
+      new vscode.Range(new vscode.Position(startl,startch),new vscode.Position(endl,endch)),str
+    ));
+	}));*/
 	context.vsc.subscriptions.push(vscode.commands.registerCommand("stexide.mathhub.install", arg => {
 		if (context.mathhub) {context.mathhub.roots = []; context.mathhub.update();}
 		context.client?.sendNotification(new language.ProtocolNotificationType<InstallMessage,void>("sTeX/installArchive"),{archive:(<MHTreeItem>arg).path});

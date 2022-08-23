@@ -138,7 +138,7 @@
 					},
 					"stexide.remoteMathHub": {
 						"type": "string",
-						"default": "https://mmt.beta.vollki.kwarc.info/:sTeX",
+						"default": "https://stexmmt.mathhub.info/:sTeX",
 						"markdownDescription": "The URL of the remote MathHub server for repository management"
 					}
 				}
