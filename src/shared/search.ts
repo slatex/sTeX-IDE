@@ -74,11 +74,14 @@ export class SearchPanel implements vscode.WebviewViewProvider {
               }
               webviewView.webview.postMessage({html:htmlResults(loc,rem)});
             });
+            break;
           case "open":
             vscode.window.showTextDocument(vscode.Uri.parse(msg.uri));
+            break;
           case "install": 
             if (this.scontext.mathhub) {this.scontext.mathhub.roots = []; this.scontext.mathhub.update();}
             this.scontext.client?.sendNotification(new language.ProtocolNotificationType<InstallMessage,void>("sTeX/installArchive"),{archive:msg.archive});
+            break;
         }
       });
       //this.scontext.outputChannel.appendLine("Values: " + tkuri.toString() + ", " + cssuri.toString());
