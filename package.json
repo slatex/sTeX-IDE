@@ -7,7 +7,7 @@
 		"type": "git",
 		"url": "github:slatex/stex-IDE"
 	},
-	"publisher": "KWARC (https://kwarc.info)",
+	"publisher": "kwarc",
 	"version": "1.0.0",
 	"license":"GPL3",
 	"engines": {
