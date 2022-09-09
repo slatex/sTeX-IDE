@@ -42,8 +42,46 @@ export function launchLocal(context: STeXContext) {
   vscode.commands.executeCommand("setContext", "stex:enabled", true);
 }
 
-function launchSTeXServer(context: STeXContext/*,javaHome: string*/) {
+export function launchSTeXServerWithArgs(context: STeXContext,jarPath:string,mathhub:string) {
+	const config = vscode.workspace.getConfiguration("stexide");
+	const portO = config.get<string>("mmtport");
+	if(!portO) { 
+		const message =
+		"Port not set";
+		context.outputChannel.appendLine(message);
+		vscode.window.showErrorMessage(message, "Open settings").then(choice => {
+	  		if (choice === "Open settings") {
+				vscode.commands.executeCommand("workbench.action.openSettings");
+	  		}
+		});
+  		return;
+	}
+	  
+  
+	const javaOptions = getJavaOptions(context.outputChannel);
 
+	const baseProperties = [
+		"-Xmx8192m",
+		"-classpath",
+		jarPath,
+		"info.kwarc.mmt.stex.lsp.Main",
+		mathhub,portO
+	  ];
+	const launchArgs = baseProperties
+		.concat(javaOptions);
+
+	context.outputChannel.appendLine("Initializing sTeX LSP Server");
+
+	const serverOptions: language.ServerOptions = {
+		run: { command: "java", args: launchArgs },
+		debug: { command: "java", args: launchArgs }
+	};
+
+	context.client = languageclient(serverOptions);
+	handleClient(context);
+}
+
+function launchSTeXServer(context: STeXContext/*,javaHome: string*/) {
 	const config = vscode.workspace.getConfiguration("stexide");
     /*
 	context.outputChannel.appendLine(`Java home: ${javaHome}`);
@@ -75,39 +113,5 @@ function launchSTeXServer(context: STeXContext/*,javaHome: string*/) {
   		return;
 	}
 	const jarPath = jarPathO; 
-	const portO = config.get<string>("mmtport");
-	if(!portO) { 
-		const message =
-		"Port not set";
-		context.outputChannel.appendLine(message);
-		vscode.window.showErrorMessage(message, "Open settings").then(choice => {
-	  		if (choice === "Open settings") {
-				vscode.commands.executeCommand("workbench.action.openSettings");
-	  		}
-		});
-  		return;
-	}
-	  
-  
-	const javaOptions = getJavaOptions(context.outputChannel);
-
-	const baseProperties = [
-		"-Xmx8192m",
-		"-classpath",
-		jarPath,
-		"info.kwarc.mmt.stex.lsp.Main",
-		mathhubO,portO
-	  ];
-	const launchArgs = baseProperties
-		.concat(javaOptions);
-
-	context.outputChannel.appendLine("Initializing sTeX LSP Server");
-
-	const serverOptions: language.ServerOptions = {
-		run: { command: "java", args: launchArgs },
-		debug: { command: "java", args: launchArgs }
-	};
-
-	context.client = languageclient(serverOptions);
-	handleClient(context);
+	launchSTeXServerWithArgs(context,jarPath,mathhubO);
 }

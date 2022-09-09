@@ -7,14 +7,19 @@
 		"type": "git",
 		"url": "github:slatex/stex-IDE"
 	},
-	"publisher": "KWARC",
-	"version": "0.0.1",
+	"publisher": "KWARC (https://kwarc.info)",
+	"version": "1.0.0",
+	"license":"GPL3",
 	"engines": {
 		"vscode": "^1.67.0"
 	},
 	"categories": [
-		"Other"
+		"Programming Languages",
+		"Language Packs"
 	],
+	"bugs": {
+		"url":"https://github.com/slatex/sTeX-IDE/issues"
+	},
 	"activationEvents": [
 		"workspaceContains:**/*.tex"
 	],

@@ -5,7 +5,7 @@ import * as fs from "fs";
 import { getJavaHome, javaErr } from "../util/java";
 import path = require("path");
 import { exec, spawn } from "child_process";
-import { launchLocal } from "./launches";
+import { launchLocal, launchSTeXServerWithArgs } from "./launches";
 import { currentPanels } from "vscode-wizard/lib/pageImpl";
 
 export function getMathHub(): string | undefined {
@@ -136,7 +136,10 @@ export function setup(stexc: STeXContext) {
                         close:true,
                         success:true,
                         returnObject:
-                        vscode.workspace.getConfiguration("stexide").update("jarpath",data.jarpath,vscode.ConfigurationTarget.Global).then(() => launchLocal(stexc)),
+                        vscode.workspace.getConfiguration("stexide").update("jarpath",data.jarpath,vscode.ConfigurationTarget.Global).then(() => {
+                            launchSTeXServerWithArgs(stexc,data.jarpath,data.mathhub);
+                            vscode.commands.executeCommand("setContext", "stex:enabled", true);
+                        }),
                         templates:[]
                     });
 				}
