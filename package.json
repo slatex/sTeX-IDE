@@ -8,7 +8,7 @@
 		"url": "github:slatex/stex-IDE"
 	},
 	"publisher": "kwarc",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"license":"GPL3",
 	"engines": {
 		"vscode": "^1.67.0"
@@ -57,6 +57,14 @@
 			{
 				"command": "stexide.build",
 				"title": "Build PDF/XHTML/OMDoc",
+				"icon": {
+					"light": "img/mmt_light.svg",
+					"dark": "img/mmt_dark.svg"
+				}
+			},
+			{
+				"command": "stexide.buildhtml",
+				"title": "Preview HTML",
 				"icon": {
 					"light": "img/mmt_light.svg",
 					"dark": "img/mmt_dark.svg"
@@ -124,6 +132,10 @@
 				{
 					"command": "stexide.build",
 					"when": "resourceExtname == .tex"
+				},
+				{
+					"command": "stexide.buildhtml",
+					"when": "resourceExtname == .tex"
 				}
 			]
 		},
@@ -145,6 +157,17 @@
 						"type": "string",
 						"default": "https://stexmmt.mathhub.info/:sTeX",
 						"markdownDescription": "The URL of the remote MathHub server for repository management"
+					},
+					"stexide.preview": {
+						"type":"string",
+						"default": "on save",
+						"markdownDescription": "When to parse the sTeX document and show the HTML preview window",
+						"enum":["on save", "on edit", "manually"],
+						"enumDescriptions": [
+							"Everytime a .tex file is saved (whether changed or not)",
+							"Everytime a .tex file is edited (dangerous!)",
+							"Only manually"
+						]
 					}
 				}
 			}

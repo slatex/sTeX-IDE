@@ -9,7 +9,7 @@ export interface InstallMessage {
 	archive: string
 }
 
-interface BuildMessage {
+export interface BuildMessage {
 	file:string
 }
 
@@ -38,6 +38,11 @@ export function registerCommands(context: STeXContext) {
 		context.client?.sendNotification(new language.ProtocolNotificationType<BuildMessage,void>("sTeX/buildFile"),
 			{file:(<vscode.Uri>arg).toString()});
 	}));
+	context.vsc.subscriptions.push(vscode.commands.registerCommand("stexide.buildhtml", arg => {
+		context.client?.sendNotification(new language.ProtocolNotificationType<BuildMessage,void>("sTeX/buildHTML"),
+			{file:(<vscode.Uri>arg).toString()});
+	}));
+
 }
 
 
