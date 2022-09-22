@@ -20,6 +20,9 @@ export function registerCommands(context: STeXContext) {
 	context.vsc.subscriptions.push(vscode.commands.registerCommand("stexide.openFile", arg => {
 		vscode.window.showTextDocument(arg);
 	}));
+	context.vsc.subscriptions.push(vscode.commands.registerCommand("stexide.openSettings", (arg) => {
+		vscode.commands.executeCommand("workbench.action.openSettings", `@ext:${context.vsc.extension.id}`);
+	}));
 	/*context.vsc.subscriptions.push(vscode.commands.registerCommand("stexide.insertCode", (str:string,startl:integer,startch:integer,endl:integer,endch:integer) => 
   {
 		vscode.window.activeTextEditor?.edit(eb => eb.replace(
