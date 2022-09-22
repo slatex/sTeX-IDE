@@ -143,13 +143,18 @@
 			{
 				"title": "sTeX",
 				"properties": {
-					"stexide.jarpath": {
+					"stexide.mmt.jarPath": {
 						"type": "string",
 						"default": "",
 						"markdownDescription": "Path to your [MMT.jar](https://github.com/UniFormal/MMT/releases)"
 					},
-					"stexide.mmtport": {
+					"stexide.mmt.javaHome": {
 						"type": "string",
+						"default": "",
+						"markdownDescription": "Path to specific Java installation (_optional, leave blank for default_)"
+					},
+					"stexide.mmt.port": {
+						"type": "integer",
 						"default": "8090",
 						"markdownDescription": "The port at which MMT serves xhtml documents"
 					},
