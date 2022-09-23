@@ -152,6 +152,7 @@ function searchhtml(tkuri:vscode.Uri,cssuri:vscode.Uri) { return `
 <vscode-text-field size="50" id="search-field" placeholder="Search">
   <span slot="start" class="codicon codicon-search"></span>
   sTeX Content
+  <span slot="end" class="codicon codicon-close" onclick="clearSearch()" style="cursor: pointer;"></span>
 </vscode-text-field>
 <vscode-radio-group id="searchtype">
   <vscode-radio id="searchall" value="all" checked>Anywhere</vscode-radio>
@@ -172,20 +173,29 @@ searchfield.value = previousState?.searchValue ?? "";
 resultfield.innerHTML = previousState?.searchResultsHtml ?? "";
 searchtype.value = previousState?.searchType ?? "all";
 
-
-searchfield.addEventListener("keyup", runsearch);
+searchfield.addEventListener("keyup", runSearch);
+searchtype.addEventListener("change", runSearch);
 let timeout = null;
-function runsearch() {
+function clearSearch() {
+  searchfield.value = "";
+  doSearch();
+}
+function runSearch(event) {
+  if (event.key === "Enter") {
+    window.clearTimeout(timeout);
+    doSearch(true);
+    return;
+  }
   if (timeout) {
     window.clearTimeout(timeout);
   }
-  timeout = window.setTimeout(function(){ dosearch();}, 500);
+  timeout = window.setTimeout(function(){ doSearch();}, 500);
 }
-function dosearch() {
+function doSearch(force=false) {
   const oldState = vscode.getState();
   const searchType = searchtype.value;
   const searchValue = searchfield.value;
-  if (oldState.searchValue === searchValue && oldState.searchType === searchType) {
+  if (!force && oldState.searchValue === searchValue && oldState.searchType === searchType) {
     return;
   }
   vscode.setState({ ...vscode.getState(), searchType, searchValue });
