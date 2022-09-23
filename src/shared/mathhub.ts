@@ -174,7 +174,7 @@ export class MathHubTreeProvider implements vscode.TreeDataProvider<MHTreeItem|F
         if(error){reject(error);} else {resolve(result);}
     }
 
-    roots:MHTreeItem[] = [];
+    roots: MHTreeItem[] = [];
     populate(ti:MHTreeItem) {
         let asgroup = <RepoGroup>ti.mh;
         if (asgroup.children !== undefined) {
@@ -186,25 +186,39 @@ export class MathHubTreeProvider implements vscode.TreeDataProvider<MHTreeItem|F
         }
     }
 
+    private _onInstallFinished = new vscode.EventEmitter<void>();
     private _onDidChangeTreeData =
         new vscode.EventEmitter<MHTreeItem| undefined|null|void>();
     readonly onDidChangeTreeData?: vscode.Event<void | MHTreeItem | MHTreeItem[] | null | undefined> | undefined =
         this._onDidChangeTreeData.event;
-    update() {
+    
+    beginInstall() {
+        vscode.window.withProgress({ location: { viewId: "stexidemathhub" } }, () => new Promise((r) => this._onInstallFinished.event(r)));
+        // this.roots.splice(0, this.roots.length);
+        const setDisabledContextValueRec = (mhti: MHTreeItem) => {
+            mhti.contextValue = "disabled";
+            mhti.children?.forEach(setDisabledContextValueRec);
+        };
+        this.roots.forEach(setDisabledContextValueRec);
         this._onDidChangeTreeData.fire();
+    }
+
+    finishInstall(newRoots: MHTreeItem[]) {
+        this.roots.splice(0, this.roots.length, ...newRoots ?? []);
+        this._onDidChangeTreeData.fire();
+        this._onInstallFinished.fire();
     }
     updateRemote(context: STeXContext) {
         let ret = context.client?.sendRequest(new ProtocolRequestType0<MHEntry[],any,any,any>("sTeX/getMathHubContent"));
         ret?.then(ls => {
-            this.roots = [];
+            const newRoots: MHTreeItem[] = [];
             for (const mh of ls) {
                 let ti = new MHTreeItem(mh);
-                this.roots.push(ti);
+                newRoots.push(ti);
                 this.populate(ti);
             }
-            this.update();
+            this.finishInstall(newRoots);
         });
-
     }
 
     constructor(private context: STeXContext) {

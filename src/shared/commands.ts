@@ -30,7 +30,9 @@ export function registerCommands(context: STeXContext) {
     ));
 	}));*/
 	context.vsc.subscriptions.push(vscode.commands.registerCommand("stexide.mathhub.install", arg => {
-		if (context.mathhub) {context.mathhub.roots = []; context.mathhub.update();}
+		if (context.mathhub) {
+			context.mathhub.beginInstall();
+		}
 		context.client?.sendNotification(new language.ProtocolNotificationType<InstallMessage,void>("sTeX/installArchive"),{archive:(<MHTreeItem>arg).path});
 	}));
 	vscode.window.registerTreeDataProvider("stexidemathhub",new MathHubTreeProvider(context));
