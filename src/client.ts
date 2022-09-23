@@ -40,9 +40,7 @@ export function handleClient(context: STeXContext) {
 	context.client.onRequest("stex/updateHTML",a => {
 		updateHTML(a as HTMLUpdateMessage);
 	});
-	context.client.onNotification("stex/updateMathHub",a => {
-		context.mathhub?.updateRemote(context);
-	});
+	context.client.onNotification("stex/updateMathHub", () => context.mathhub?.updateRemote());
 	interface MathHubMessage {
 		mathhub:string,
 		remote:string

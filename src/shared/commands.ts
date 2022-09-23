@@ -29,11 +29,8 @@ export function registerCommands(context: STeXContext) {
       new vscode.Range(new vscode.Position(startl,startch),new vscode.Position(endl,endch)),str
     ));
 	}));*/
-	context.vsc.subscriptions.push(vscode.commands.registerCommand("stexide.mathhub.install", arg => {
-		if (context.mathhub) {
-			context.mathhub.beginInstall();
-		}
-		context.client?.sendNotification(new language.ProtocolNotificationType<InstallMessage,void>("sTeX/installArchive"),{archive:(<MHTreeItem>arg).path});
+	context.vsc.subscriptions.push(vscode.commands.registerCommand("stexide.mathhub.install", (arg: MHTreeItem) => {
+		context.mathhub?.installArchive(arg.path);
 	}));
 	vscode.window.registerTreeDataProvider("stexidemathhub",new MathHubTreeProvider(context));
 	vscode.window.registerWebviewViewProvider("stexidesearch",new SearchPanel(context));
