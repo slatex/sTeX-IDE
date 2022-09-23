@@ -149,9 +149,9 @@ function searchhtml(tkuri:vscode.Uri,cssuri:vscode.Uri) { return `
   </style>
 </head>
 <body>
-<vscode-text-field size="50" id="search-field">
+<vscode-text-field size="50" id="search-field" placeholder="Search">
   <span slot="start" class="codicon codicon-search"></span>
-  Search sTeX Content
+  sTeX Content
 </vscode-text-field>
 <vscode-radio-group id="searchtype">
   <vscode-radio id="searchall" value="all" checked>Anywhere</vscode-radio>
@@ -162,11 +162,17 @@ function searchhtml(tkuri:vscode.Uri,cssuri:vscode.Uri) { return `
 <vscode-divider role="separator"></vscode-divider>
 <div id="stex-search-results"></div>
 <script>
-console.log("here");
 const vscode = acquireVsCodeApi();
 let searchfield = document.getElementById("search-field");
 let resultfield = document.getElementById("stex-search-results");
 let searchtype = document.getElementById("searchtype");
+
+const previousState = vscode.getState();
+searchfield.value = previousState?.searchValue ?? "";
+resultfield.innerHTML = previousState?.searchResultsHtml ?? "";
+searchtype.value = previousState?.searchType ?? "all";
+
+
 searchfield.addEventListener("keyup", runsearch);
 let timeout = null;
 function runsearch() {
@@ -176,6 +182,13 @@ function runsearch() {
   timeout = window.setTimeout(function(){ dosearch();}, 500);
 }
 function dosearch() {
+  const oldState = vscode.getState();
+  const searchType = searchtype.value;
+  const searchValue = searchfield.value;
+  if (oldState.searchValue === searchValue && oldState.searchType === searchType) {
+    return;
+  }
+  vscode.setState({ ...vscode.getState(), searchType, searchValue });
   window.clearTimeout(timeout);
   resultfield.innerHTML = "<vscode-progress-ring></vscode-progress-ring>";
   vscode.postMessage({
@@ -197,8 +210,9 @@ function installArchive(s) {
   });
 }
 window.addEventListener('message', event => {
-  const msg = event.data;
-  resultfield.innerHTML = msg.html;
+  const data = event.data;
+  vscode.setState({ ...vscode.getState(), searchResultsHtml: data.html });
+  resultfield.innerHTML = data.html;
 })
 </script>
 
