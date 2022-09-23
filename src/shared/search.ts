@@ -63,13 +63,13 @@ export class SearchPanel implements vscode.WebviewViewProvider {
               var loc : string = "";
               if (res.locals.length > 0) {
                 res.locals.forEach(l => {
-                  loc += htmlResult(l,'openFile("' + l.fileuri + '")',"open");
+                  loc += htmlResult(l,'openFile(\'' + l.fileuri + '\')',"open");
                 });
               }
               var rem : string = "";
               if (res.remotes.length > 0) {
                 res.remotes.forEach(l => {
-                  rem += htmlResult(l,'installArchive("' + l.archive + '")',"install");
+                  rem += htmlResult(l,'installArchive(\'' + l.archive + '\')',"install");
                 });
               }
               webviewView.webview.postMessage({html: htmlResults(loc, rem, res.locals.length, res.remotes.length)});
@@ -162,6 +162,7 @@ function searchhtml(tkuri:vscode.Uri,cssuri:vscode.Uri) { return `
 <vscode-divider role="separator"></vscode-divider>
 <div id="stex-search-results"></div>
 <script>
+console.log("here");
 const vscode = acquireVsCodeApi();
 let searchfield = document.getElementById("search-field");
 let resultfield = document.getElementById("stex-search-results");
