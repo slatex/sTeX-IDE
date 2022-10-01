@@ -1,8 +1,9 @@
 import * as fs from 'fs';
 import path = require('path');
-import { setFlagsFromString } from 'v8';
+import {ProtocolNotificationType} from 'vscode-languageclient/node';
 import * as vscode from 'vscode';
 import { ProtocolRequestType0 } from 'vscode-languageclient';
+import { InstallMessage } from './commands';
 import { STeXContext } from './context';
 
 export class FileStat implements vscode.FileStat {
@@ -174,7 +175,7 @@ export class MathHubTreeProvider implements vscode.TreeDataProvider<MHTreeItem|F
         if(error){reject(error);} else {resolve(result);}
     }
 
-    roots:MHTreeItem[] = [];
+    roots: MHTreeItem[] = [];
     populate(ti:MHTreeItem) {
         let asgroup = <RepoGroup>ti.mh;
         if (asgroup.children !== undefined) {
@@ -186,29 +187,45 @@ export class MathHubTreeProvider implements vscode.TreeDataProvider<MHTreeItem|F
         }
     }
 
-    private _onDidChangeTreeData =
-        new vscode.EventEmitter<MHTreeItem| undefined|null|void>();
+    private _onUpdated = new vscode.EventEmitter<void>();
+    private _onDidChangeTreeData = new vscode.EventEmitter<MHTreeItem | undefined | null | void>();
     readonly onDidChangeTreeData?: vscode.Event<void | MHTreeItem | MHTreeItem[] | null | undefined> | undefined =
         this._onDidChangeTreeData.event;
-    update() {
+    
+    installArchive(archive: string) {
+        this.showProgressUntilUpdated();
+        this.context.client?.sendNotification(new ProtocolNotificationType<InstallMessage, void>("sTeX/installArchive"), { archive });
+        const setDisabledContextValueRec = (mhti: MHTreeItem) => {
+            mhti.contextValue = "disabled";
+            mhti.children?.forEach(setDisabledContextValueRec);
+        };
+        this.roots.forEach(setDisabledContextValueRec);
         this._onDidChangeTreeData.fire();
     }
-    updateRemote(context: STeXContext) {
-        let ret = context.client?.sendRequest(new ProtocolRequestType0<MHEntry[],any,any,any>("sTeX/getMathHubContent"));
-        ret?.then(ls => {
-            this.roots = [];
-            for (const mh of ls) {
-                let ti = new MHTreeItem(mh);
-                this.roots.push(ti);
-                this.populate(ti);
-            }
-            this.update();
-        });
 
+    updateRemote() {
+        this.context.client
+            ?.sendRequest(new ProtocolRequestType0<MHEntry[], any, any, any>("sTeX/getMathHubContent"))
+            ?.then((ls) => {
+                const newRoots: MHTreeItem[] = [];
+                for (const mh of ls) {
+                    let ti = new MHTreeItem(mh);
+                    newRoots.push(ti);
+                    this.populate(ti);
+                }
+                this.roots.splice(0, this.roots.length, ...newRoots ?? []);
+                this._onDidChangeTreeData.fire();
+                this._onUpdated.fire();
+            });
+    }
+
+    showProgressUntilUpdated(): void {
+        vscode.window.withProgress({ location: { viewId: "stexidemathhub" } }, () => new Promise((r) => this._onUpdated.event(r)));
     }
 
     constructor(private context: STeXContext) {
-        this.updateRemote(context);
         context.mathhub = this;
+        this.showProgressUntilUpdated();
+        this.updateRemote();
     }
 }

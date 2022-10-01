@@ -63,24 +63,23 @@ export class SearchPanel implements vscode.WebviewViewProvider {
               var loc : string = "";
               if (res.locals.length > 0) {
                 res.locals.forEach(l => {
-                  loc += htmlResult(l,'openFile("' + l.fileuri + '")',"open");
+                  loc += htmlResult(l,'openFile(\'' + l.fileuri + '\')',"open");
                 });
               }
               var rem : string = "";
               if (res.remotes.length > 0) {
                 res.remotes.forEach(l => {
-                  rem += htmlResult(l,'installArchive("' + l.archive + '")',"install");
+                  rem += htmlResult(l,'installArchive(\'' + l.archive + '\')',"install");
                 });
               }
-              webviewView.webview.postMessage({html:htmlResults(loc,rem)});
+              webviewView.webview.postMessage({html: htmlResults(loc, rem, res.locals.length, res.remotes.length)});
             });
             break;
           case "open":
             vscode.window.showTextDocument(vscode.Uri.parse(msg.uri));
             break;
           case "install": 
-            if (this.scontext.mathhub) {this.scontext.mathhub.roots = []; this.scontext.mathhub.update();}
-            this.scontext.client?.sendNotification(new language.ProtocolNotificationType<InstallMessage,void>("sTeX/installArchive"),{archive:msg.archive});
+            this.scontext.mathhub?.installArchive(msg.archive);
             break;
         }
       });
@@ -91,27 +90,28 @@ export class SearchPanel implements vscode.WebviewViewProvider {
 
 function htmlResult(res:LSPSearchResult,link:string,label:string) {
   return `
-<tr><td><table width="100%"><tr>
-  <td style="text-align:left;"><i><b>[${res.archive}]${res.sourcefile}</b></i><td>
-  <td style="text-align:right;">
-    <vscode-button onclick='${link}'>${label}</vscode-button>
-  <td>
-</tr></table></td></tr>
-<tr><td style="border:1px solid;">
-  <iframe width="100%" src="${res.html}"></iframe>
-</td></tr>`;
+<div class="result">
+  <i><b>[${res.archive}] ${res.sourcefile}</b></i>
+  <vscode-button onclick="${link}" appearance="secondary">${label}</vscode-button>
+</div>
+<iframe frameborder="0" src="${res.html}"></iframe>`;
 }
 
-function htmlResults(locals : string,remotes:string) { return `
-<table id="stex-searchlocal" style="width:100%">
-  <tr><th><vscode-tag>Local</vscode-tag></th></tr>
-  ${locals}
-</table>
-<table id="stex-searchglobal" style="width:100%">
-  <tr><th><vscode-tag>Remote</vscode-tag></th></tr>
-  ${remotes}
-</table>
-`;}
+function htmlResults(locals: string, remotes: string, numLocals: number, numRemotes: number) { return `
+<div id="stex-searchlocal" class="result-container">
+  <details open>
+    <summary>Local <vscode-badge>${numLocals}</vscode-badge></summary>
+    ${locals}
+  </details>
+</div>
+<vscode-divider role="separator"></vscode-divider>
+<div id="stex-searchglobal" class="result-container">
+  <details open>
+    <summary>Remote <vscode-badge>${numRemotes}</vscode-badge></summary>
+    ${remotes}
+  </details>
+</div>`;
+}
 /* 
   <tr><td style="border:1px solid">narf</td></tr>
 */
@@ -122,34 +122,84 @@ function searchhtml(tkuri:vscode.Uri,cssuri:vscode.Uri) { return `
 <head>
   <link href="${cssuri}" rel="stylesheet"/>
   <script type="module" src="${tkuri}"></script>
+  <style>
+    details {
+      cursor: pointer;
+    }
+    #stex-search-results iframe {
+      background-color: white;
+      width: 100%;
+    }
+    #stex-search-results .result-container {
+      display: flex;
+      flex-direction: column;
+      margin: 8px 0;
+    }
+    #stex-search-results .result {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      margin: 12px 0 8px 0;
+    }
+    vscode-divider {
+      margin: 16px 0;
+    }
+  </style>
 </head>
 <body>
-<vscode-text-field size="50" id="searchfield">Search sTeX Content<span slot="start" class="codicon codicon-search"></span></vscode-text-field>
-<br/>
+<vscode-text-field size="50" id="search-field" placeholder="Search">
+  <span slot="start" class="codicon codicon-search"></span>
+  sTeX Content
+  <span slot="end" class="codicon codicon-close" onclick="clearSearch()" style="cursor: pointer;"></span>
+</vscode-text-field>
 <vscode-radio-group id="searchtype">
   <vscode-radio id="searchall" value="all" checked>Anywhere</vscode-radio>
   <vscode-radio id="searchdefs" value="defs">Definitions</vscode-radio>
   <vscode-radio id="searchass" value="ass">Assertions</vscode-radio>
   <vscode-radio id="searchex" value="ex">Examples</vscode-radio>
 </vscode-radio-group>
-<div id="stex-searchresults">
-</div>
+<vscode-divider role="separator"></vscode-divider>
+<div id="stex-search-results"></div>
 <script>
 const vscode = acquireVsCodeApi();
-let searchfield = document.getElementById("searchfield");
-let resultfield = document.getElementById("stex-searchresults");
+let searchfield = document.getElementById("search-field");
+let resultfield = document.getElementById("stex-search-results");
 let searchtype = document.getElementById("searchtype");
-searchfield.addEventListener("keyup", runsearch);
+
+const previousState = vscode.getState();
+searchfield.value = previousState?.searchValue ?? "";
+resultfield.innerHTML = previousState?.searchResultsHtml ?? "";
+searchtype.value = previousState?.searchType ?? "all";
+
+searchfield.addEventListener("keyup", runSearch);
+searchtype.addEventListener("change", runSearch);
 let timeout = null;
-function runsearch() {
+function clearSearch() {
+  searchfield.value = "";
+  doSearch();
+}
+function runSearch(event) {
+  if (event.key === "Enter") {
+    window.clearTimeout(timeout);
+    doSearch(true);
+    return;
+  }
   if (timeout) {
     window.clearTimeout(timeout);
   }
-  timeout = window.setTimeout(function(){ dosearch();}, 500);
+  timeout = window.setTimeout(function(){ doSearch();}, 500);
 }
-function dosearch() {
+function doSearch(force=false) {
+  const oldState = vscode.getState();
+  const searchType = searchtype.value;
+  const searchValue = searchfield.value;
+  if (!force && oldState.searchValue === searchValue && oldState.searchType === searchType) {
+    return;
+  }
+  vscode.setState({ ...vscode.getState(), searchType, searchValue });
   window.clearTimeout(timeout);
-  resultfield.innerHTML = "<vscode-divider></vscode-divider><vscode-progress-ring></vscode-progress-ring>";
+  resultfield.innerHTML = "<vscode-progress-ring></vscode-progress-ring>";
   vscode.postMessage({
     command: "search",
     text: searchfield.value,
@@ -169,8 +219,9 @@ function installArchive(s) {
   });
 }
 window.addEventListener('message', event => {
-  const msg = event.data;
-  resultfield.innerHTML = msg.html;
+  const data = event.data;
+  vscode.setState({ ...vscode.getState(), searchResultsHtml: data.html });
+  resultfield.innerHTML = data.html;
 })
 </script>
 

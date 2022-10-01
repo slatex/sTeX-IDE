@@ -20,15 +20,17 @@ export function registerCommands(context: STeXContext) {
 	context.vsc.subscriptions.push(vscode.commands.registerCommand("stexide.openFile", arg => {
 		vscode.window.showTextDocument(arg);
 	}));
+	context.vsc.subscriptions.push(vscode.commands.registerCommand("stexide.openSettings", (arg) => {
+		vscode.commands.executeCommand("workbench.action.openSettings", `@ext:${context.vsc.extension.id}`);
+	}));
 	/*context.vsc.subscriptions.push(vscode.commands.registerCommand("stexide.insertCode", (str:string,startl:integer,startch:integer,endl:integer,endch:integer) => 
   {
 		vscode.window.activeTextEditor?.edit(eb => eb.replace(
       new vscode.Range(new vscode.Position(startl,startch),new vscode.Position(endl,endch)),str
     ));
 	}));*/
-	context.vsc.subscriptions.push(vscode.commands.registerCommand("stexide.mathhub.install", arg => {
-		if (context.mathhub) {context.mathhub.roots = []; context.mathhub.update();}
-		context.client?.sendNotification(new language.ProtocolNotificationType<InstallMessage,void>("sTeX/installArchive"),{archive:(<MHTreeItem>arg).path});
+	context.vsc.subscriptions.push(vscode.commands.registerCommand("stexide.mathhub.install", (arg: MHTreeItem) => {
+		context.mathhub?.installArchive(arg.path);
 	}));
 	vscode.window.registerTreeDataProvider("stexidemathhub",new MathHubTreeProvider(context));
 	vscode.window.registerWebviewViewProvider("stexidesearch",new SearchPanel(context));

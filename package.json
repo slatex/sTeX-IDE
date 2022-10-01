@@ -82,6 +82,11 @@
 					"light": "img/cloud-download-light.svg",
 					"dark": "img/cloud-download-dark.svg"
 				}
+			},
+			{
+				"command": "stexide.openSettings",
+				"title": "Extension Settings",
+				"category": "sTeX"
 			}
 		],
 		"viewsContainers": {
