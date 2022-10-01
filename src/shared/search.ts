@@ -76,7 +76,10 @@ export class SearchPanel implements vscode.WebviewViewProvider {
             });
             break;
           case "open":
-            vscode.window.showTextDocument(vscode.Uri.parse(msg.uri));
+            vscode.workspace.openTextDocument(vscode.Uri.parse(msg.uri)).then((document : vscode.TextDocument) => {
+              vscode.window.showTextDocument(document,vscode.ViewColumn.Beside,true);
+            })
+            //vscode.window.showTextDocument(vscode.Uri.parse(msg.uri));
             break;
           case "install": 
             this.scontext.mathhub?.installArchive(msg.archive);
