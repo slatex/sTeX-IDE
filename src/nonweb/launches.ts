@@ -5,7 +5,7 @@ import * as path from "path";
 import { handleClient, languageclient} from "../client";
 import { getJavaOptions } from "../util/java";
 import { STeXContext } from "../shared/context";
-import { getMathHub } from "./setup";
+import { getJarPath, getMathHub } from "./setup";
 
 export function launchRemote(context: STeXContext) {
 	// The server is started as a separate app and listens on port 5007
@@ -44,7 +44,7 @@ export function launchLocal(context: STeXContext) {
 
 export function launchSTeXServerWithArgs(context: STeXContext,jarPath:string,mathhub:string) {
 	const config = vscode.workspace.getConfiguration("stexide");
-	const portO = config.get<string>("mmtport");
+	const portO = config.get<string>("mmt.port");
 	if(!portO) { 
 		const message =
 		"Port not set";
@@ -82,12 +82,11 @@ export function launchSTeXServerWithArgs(context: STeXContext,jarPath:string,mat
 }
 
 function launchSTeXServer(context: STeXContext/*,javaHome: string*/) {
-	const config = vscode.workspace.getConfiguration("stexide");
     /*
 	context.outputChannel.appendLine(`Java home: ${javaHome}`);
 	const javaPath = path.join(javaHome, "bin", "java");
 	 */
-	const jarPathO = config.get<string>("jarpath");
+	const jarPathO = getJarPath();
 	if(!jarPathO) { 
 		const message =
 		"Path to MMT jar not set";

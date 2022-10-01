@@ -3,16 +3,14 @@ import * as vscode from 'vscode';
 import {registerCommands} from './shared/commands';
 import { launchLocal, launchRemote } from './nonweb/launches';
 import { STeXContext } from './shared/context';
-import { getJarpath, getMathHub, setup } from './nonweb/setup';
+import { getJarPath, getMathHub, setup } from './nonweb/setup';
 
 let stexc : STeXContext;
 
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
 	stexc = new STeXContext(context);
-	if (getMathHub() && getJarpath()) {
-		launchLocal(stexc);
-	} else {
-		setup(stexc);
+	if (!getMathHub() || !getJarPath()) {
+		await setup(stexc);
 	}
 	//launchRemote(stexc);
 }

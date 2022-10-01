@@ -1,151 +1,238 @@
+import { IWizardWorkflowManager, PerformFinishResponse, SEVERITY, BUTTONS, ValidatorResponse, WebviewWizard, WizardDefinition, IWizardPage } from "@redhat-developer/vscode-wizard";
 import { STeXContext } from "../shared/context";
-import * as vscode from 'vscode';
-import {PerformFinishResponse, WebviewWizard, WizardDefinition} from "vscode-wizard";
+import { spawn } from "child_process";
+import * as vscode from "vscode";
+import * as path from "path";
 import * as fs from "fs";
-import { getJavaHome, javaErr } from "../util/java";
-import path = require("path");
-import { exec, spawn } from "child_process";
-import { launchLocal, launchSTeXServerWithArgs } from "./launches";
-import { currentPanels } from "vscode-wizard/lib/pageImpl";
+
+
+export function getMathhubEnvConfigPath(): string {
+    return path.join((process.env.HOME || process.env.USERPROFILE) as string, ".stex", "mathhub.path");
+}
 
 export function getMathHub(): string | undefined {
-    let mathhub = process.env.MATHHUB;
+    const mathhub = process.env.MATHHUB;
     if (mathhub) {
         return mathhub;
-    } else {
-        let filepath = (process.env.HOME?process.env.HOME:process.env.USERPROFILE) + "/.stex";
-        let file = filepath + "/mathhub.path";
-        if (fs.existsSync(file)) {
-            return fs.readFileSync(file).toString().trim();
-        } else {
-            return undefined;
+    }
+    const mathhubEnvConfig = getMathhubEnvConfigPath();
+    if (fs.existsSync(mathhubEnvConfig)) {
+        return fs.readFileSync(mathhubEnvConfig).toString().trim();
+    }
+    return undefined;
+}
+
+export function getJarPath(): string | undefined {
+    const config = vscode.workspace.getConfiguration("stexide");
+    return config.get<string>("mmt.jarPath")?.trim();
+}
+
+function setMathHub(mathhubPath: string) {
+    const mathhubEnvConfig = getMathhubEnvConfigPath();
+    fs.mkdirSync(path.dirname(mathhubEnvConfig), { recursive: true });
+    fs.mkdirSync(mathhubPath, { recursive: true });
+    fs.writeFileSync(mathhubEnvConfig, mathhubPath);
+}
+
+async function getMMTVersion(jarPath: string, javaHome?: string): Promise<string | undefined> {
+    return new Promise((resolve, reject) => {
+        let stdout = "";
+        let stderr = "";
+        const resolveWithResult = () => stdout.trim().length > 0
+            ? resolve(stdout.trim())
+            : reject(stderr);
+
+        // the following way allows jarPath and javaHome to contain spaces
+        const env = process.env;
+        if (javaHome) {
+            // adding specified java installation to PATH variable
+            env.PATH = `${path.join(javaHome, "bin")}:${env.PATH}`;
         }
+        const args = ["-cp", jarPath, "info.kwarc.mmt.api.frontend.Run", "--version"];
+        const proc = spawn("java", args, { env })
+            .on("error", reject)
+            .on("exit", resolveWithResult)
+            .on("close", resolveWithResult);
+        proc.stdout.on("data", (data) => { stdout += data; });
+        proc.stderr.on("data", (data) => { stderr += data; });
+    });
+}
+
+function singleValidationResponse(id: string, content: string, severity: SEVERITY): ValidatorResponse {
+    return { items: [{ severity, template: { id, content } }] };
+}
+
+function wizardError(id: string, content: string): ValidatorResponse {
+    return singleValidationResponse(id, content, SEVERITY.ERROR);
+}
+
+function wizardWarning(id: string, content: string): ValidatorResponse {
+    return singleValidationResponse(id, content, SEVERITY.WARN);
+}
+
+function wizardInfo(id: string, content: string): ValidatorResponse {
+    return singleValidationResponse(id, content, SEVERITY.INFO);
+}
+
+async function validateJarPath(parameters: WorkflowData): Promise<ValidatorResponse> {
+    const jarPath = parameters.jarPath?.trim();
+    if (!jarPath) {
+        return wizardWarning("jarPath", "May not be empty");
+    } else if (!fs.existsSync(jarPath)) {
+        return wizardError("jarPath", "File does not exist");
+    }
+    return getMMTVersion(jarPath, parameters.javaHome).then((version) => {
+        return wizardInfo("jarPath", `MMT Version: ${version}`);
+    }).catch((error) => {
+        if (error.code === "ENOENT") {
+            return wizardError("jarPath", "Could not execute <code>java</code>");
+        }
+        return wizardError("jarPath", "An unknown error occurred! Could not get version");
+    });
+}
+
+type FileAccess = "F_OK" | "R_OK" | "W_OK" | "X_OK";
+
+function hasFileAccess(path: string, access: FileAccess[]): boolean {
+    try {
+        fs.accessSync(path, access.reduce((p, c) => p | fs.constants[c], 0));
+        return true;
+    } catch {
+        return false;
     }
 }
 
-export function getJarpath() : string | undefined {
-	let config = vscode.workspace.getConfiguration("stexide");
-	return config.get("jarpath");
+async function validateMathhubPath(parameters: WorkflowData): Promise<ValidatorResponse> {
+    const mathhubPath = parameters.mathhubPath?.trim();
+    if (!mathhubPath) {
+        return wizardWarning("mathhubPath", "May not be empty");
+    } else if (!fs.existsSync(mathhubPath)) {
+        return wizardWarning("mathhubPath", "Path does not exist but will be created");
+    } else if (!fs.statSync(mathhubPath).isDirectory()) {
+        return wizardError("mathhubPath", "Path is not a directory");
+    } else if (!hasFileAccess(mathhubPath, ["R_OK", "W_OK"])) {
+        return wizardError("mathhubPath", "Missing read or write permissions");
+    }
+    return { items: [] };
 }
 
-function setMathHub(path : string) {
-    let filepath = (process.env.HOME?process.env.HOME:process.env.USERPROFILE) + "/.stex";
-    let file = filepath + "/mathhub.path";
-    if (!fs.existsSync(filepath)) {
-        fs.mkdirSync(filepath);
-    } 
-    fs.writeFileSync(file,path);
+async function validateJavaHome(parameters: WorkflowData): Promise<ValidatorResponse> {
+    const javaHome = parameters.javaHome?.trim();
+    if (javaHome && !hasFileAccess(path.join(javaHome, "bin", "java"), ["X_OK"])) {
+        return wizardError("javaHome", "Could not find <code>java</code> executable");
+    }
+    return { items: [] };
 }
 
-async function getMMTVersion(stexc: STeXContext,jarpath: string): Promise<string | undefined> {
-	/*return await getJavaHome().catch(err => {
-        javaErr(stexc);
-        return undefined;
-    })
-	.then(async javaHome => {
-        if (!javaHome) {
-            javaErr(stexc);
-            return undefined;
-        }
-	    let javaPath = path.join(javaHome, "bin", "java");*/
-        let out = "";
-        let p = new Promise((resolve,reject) => {
-            let e = exec("java -classpath \"" + jarpath + "\" info.kwarc.mmt.api.frontend.Run \"--version\"").stdout?.on('data',data => {
-                out += data;
-            });
-            e?.addListener("error", reject);
-            e?.addListener("exit",resolve);
-            e?.addListener("close",resolve);
-        });
-        await p;
-        if (out === "") {
-            return undefined;
-        } else {
-            return out;
-        }
-   // });
-}
-
-export function setup(stexc: STeXContext) {
-    let jarpath = getJarpath();
-    let mathhub = getMathHub();
-	if ((!jarpath || jarpath === "") || !mathhub) {
-        let validjar = false;
-        let currentjar = "";
-		let def = {
-			title: 'sTeX Setup',
-			description: "",
-			pages: [{
-				title: "",
-				id: "stexsetup",
-				description:"",
-				fields:[
-				{
-					id:"jarsection",
-					label:"MMT",
-					description:"This Plugin needs to know the location of your MMT.jar, which you can download" +
-					" <a href='https://github.com/UniFormal/MMT/releases'>here</a>",
-					childFields:[{
-						id:"jarpath",
-						label:"MMT.jar",
-						initialValue:jarpath,
-						type:"file-picker",
-                        description:""
-					}]
-				},
-				{
-					id:"mathhubsection",
-					label:"MathHub Path",
-					description:"It also needs to know the location of you MathHub-Directory:",
-					childFields:[{
-						id:"mathhub",
-						label:"MathHub",
-						type:"textbox",
-						initialValue:mathhub? mathhub : "/some/directory/path",
-						initialState:{enabled:mathhub?false:true},
-						description:mathhub?"MathHub path provided by environment variable or .mathhub-file":""
-					}]
-				}
-			]
-			}],
-			workflowManager: {
-				canFinish(wizard: WebviewWizard, data:any): boolean {
-                    let jar : string | undefined = data.jarpath;
-                    if (!jar || !jar.trim().toUpperCase().endsWith("MMT.JAR") || !fs.existsSync(jar.trim())) {return false;}
-                    if (jar !== currentjar) {
-                        currentjar = jar;
-                        getMMTVersion(stexc,jar.trim()).then(version => {
-                            if (version) {
-                                validjar = true;
-                                def.pages[0].fields[0].childFields[0].description = "MMT Version: " + version;
-                                wizard.pages = [];
-                                wizard.initialData.set("mathhub",data.mathhub).set("jarpath",data.jarpath);
-                                wizard.open();
+export async function setup(stexc: STeXContext): Promise<void> {
+    const jarPath = getJarPath();
+    const mathhub = getMathHub();
+    if (jarPath && mathhub) {
+        return;
+    }
+    return new Promise<void>((resolve) => {
+        const def = <WizardDefinition>{
+            title: "sTeX Setup",
+            description: "",
+            buttons: [{ id: BUTTONS.FINISH, label: "Finish" }],
+            pages: [{
+                title: "",
+                asyncValidator: (parameters: WorkflowData, previousParameters: WorkflowData) => [
+                    validateJarPath(parameters),
+                    validateMathhubPath(parameters),
+                    validateJavaHome(parameters)
+                ],
+                fields: [
+                    {
+                        id: "mmt-section",
+                        label: "MMT",
+                        description: "This Plugin needs to know the location of your MMT.jar, which you can " +
+                            "download <a href='https://github.com/UniFormal/MMT/releases'>here</a>.",
+                        childFields: [{
+                            id: "jarPath",
+                            label: "Select <code>MMT.jar</code>",
+                            initialValue: jarPath,
+                            placeholder: "/path/to/mmt.jar",
+                            type: "file-picker",
+                        }]
+                    },
+                    {
+                        id: "mathhub-section",
+                        label: "MathHub",
+                        description: "It also needs to know the location of you MathHub directory" +
+                            "(MathHub/MMT archives are stored there).<br><i>Can be a new (empty) directory.</i>",
+                        childFields: [{
+                            id: "mathhubPath",
+                            label: "Select directory",
+                            type: "file-picker",
+                            dialogOptions: {
+                                canSelectFiles: false,
+                                canSelectFolders: true
+                            },
+                            placeholder: "/path/to/mathhub-directory",
+                            initialValue: mathhub,
+                            initialState: { enabled: !mathhub },
+                        }]
+                    },
+                    {
+                        id: "java-section",
+                        label: "Java",
+                        description: "Java is required. Could not find <code>JAVA_HOME</code> in environment " +
+                            "variables.<br>Please select the Java installation directory.",
+                        childFields: [{
+                            id: "javaHome",
+                            label: "Select directory",
+                            type: "file-picker",
+                            dialogOptions: {
+                                canSelectFiles: false,
+                                canSelectFolders: true
+                            },
+                            initialState: {
+                                visible: !process.env.JAVA_HOME
                             }
-                        });
-                        validjar = false;
+                        }]
                     }
-                    return validjar && (mathhub !== undefined || data.mathhub !== undefined);
-				},
-				performFinish(wizard: WebviewWizard, data:any): Promise<PerformFinishResponse | null> {
-                    if (!mathhub && data.mathhub) {
-                        setMathHub(data.mathhub);
+                ]
+            }],
+            workflowManager: <GenericWizardWorkflowManager<WorkflowData>>{
+                canFinish(wizard: WebviewWizard, data: WorkflowData): boolean {
+                    return !!data.jarPath && !!data.mathhubPath;
+                },
+                performFinish(wizard: WebviewWizard, data: WorkflowData): Promise<PerformFinishResponse | null> {
+                    if (!mathhub && data.mathhubPath) {
+                        setMathHub(data.mathhubPath);
                     }
-
-					return Promise.resolve({
-                        close:true,
-                        success:true,
-                        returnObject:
-                        vscode.workspace.getConfiguration("stexide").update("jarpath",data.jarpath,vscode.ConfigurationTarget.Global).then(() => {
-                            launchSTeXServerWithArgs(stexc,data.jarpath,data.mathhub);
-                            vscode.commands.executeCommand("setContext", "stex:enabled", true);
-                        }),
-                        templates:[]
+                    const configStore = vscode.workspace.getConfiguration("stexide");
+                    const returnObject = Promise.all([
+                        configStore.update("mmt.jarPath", data.jarPath, vscode.ConfigurationTarget.Global),
+                        configStore.update("mmt.javaHome", data.javaHome ?? "", vscode.ConfigurationTarget.Global),
+                    ])
+                        .then(() => vscode.commands.executeCommand("setContext", "stex:enabled", true))
+                        .then(() => resolve());
+                    return Promise.resolve({
+                        close: true,
+                        success: true,
+                        returnObject,
+                        templates: []
                     });
-				}
-			}
-		};
-		let wiz:WebviewWizard = new WebviewWizard("stexsetup","stexsetup",stexc.vsc,def,new Map());
-		wiz.open();
-	}
+                }
+            }
+        };
+        const wizard = new WebviewWizard("stexsetup", "stexsetup", stexc.vsc, def, new Map());
+        wizard.open();
+    });
+}
+
+type WorkflowData = {
+    mathhubPath?: string,
+    jarPath?: string,
+    javaHome?: string
+};
+
+interface GenericWizardWorkflowManager<T> extends IWizardWorkflowManager {
+    canFinish?(wizard: WebviewWizard, data: T): boolean;
+    performFinish(wizard: WebviewWizard, data: T): Promise<PerformFinishResponse | null>;
+    getNextPage?(page: IWizardPage, data: T): IWizardPage | null;
+    getPreviousPage?(page: IWizardPage, data: T): IWizardPage | null;
+    performCancel?(): void;
 }
