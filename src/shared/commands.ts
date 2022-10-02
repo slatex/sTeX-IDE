@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as language from 'vscode-languageclient/node';
-import { CancellationToken, integer, NotificationType0 } from 'vscode-languageclient/node';
+import { CancellationToken, integer, NotificationType0, NotificationType1, ProtocolNotificationType } from 'vscode-languageclient/node';
 import { STeXContext } from './context';
 import { MathHubTreeProvider, MHTreeItem } from './mathhub';
 import { SearchPanel } from './search';
@@ -75,7 +75,23 @@ class ToolsPanel implements vscode.WebviewViewProvider {
       webviewView.webview.onDidReceiveMessage(msg => {
         switch (msg.command) {
           case "quickparse":
-			this.scontext.client?.sendNotification(new NotificationType0("sTeX/parseWorkspace"));
+			      this.scontext.client?.sendNotification(new NotificationType0("sTeX/parseWorkspace"));
+            break;
+          case "newarchive":
+            vscode.window.showInputBox({
+              prompt:"Insert the name of a new math archive here.",
+              password:false,
+              title:"New Math Archive",
+              placeHolder:"My/Archive/Name",
+              validateInput(value) {
+                return undefined // TODO
+              },
+            }).then(value => {
+              if (value !== undefined) { 
+                this.scontext.client?.sendNotification(new ProtocolNotificationType<InstallMessage, void>("sTeX/initializeArchive"), { archive:value });
+              }
+            });
+            break;
 		}
       });
       //this.scontext.outputChannel.appendLine("Values: " + tkuri.toString() + ", " + cssuri.toString());
@@ -92,14 +108,23 @@ function toolhtml(tkuri:vscode.Uri,cssuri:vscode.Uri) { return `
   <script type="module" src="${tkuri}"></script>
 </head>
 <body>
+<div style="text-align:center">
+  <vscode-button onclick="new_archive()">New sTeX Archive</vscode-button>
+  <vscode-divider role="separator"></vscode-divider>
   <vscode-button onclick="quickparse_workspace()">Quickparse Workspace</vscode-button>
-  
+</div>
 <script>
 const vscode = acquireVsCodeApi();
 
 function quickparse_workspace() {
   vscode.postMessage({
     command: "quickparse"
+  });
+}
+
+function new_archive() {
+  vscode.postMessage({
+    command: "newarchive"
   });
 }
 </script>

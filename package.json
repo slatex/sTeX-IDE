@@ -8,7 +8,7 @@
 		"url": "github:slatex/stex-IDE"
 	},
 	"publisher": "kwarc",
-	"version": "1.0.2",
+	"version": "1.0.3",
 	"license": "GPL3",
 	"engines": {
 		"vscode": "^1.67.0"

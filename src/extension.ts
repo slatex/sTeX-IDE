@@ -9,10 +9,10 @@ let stexc : STeXContext;
 
 export async function activate(context: vscode.ExtensionContext) {
 	stexc = new STeXContext(context);
-	if (!getMathHub() || !getJarPath()) {
+	/*if (!getMathHub() || !getJarPath()) {
 		await setup(stexc);
-	}
-	//launchRemote(stexc);
+	}*/
+	launchRemote(stexc);
 }
 
 export function deactivate() {

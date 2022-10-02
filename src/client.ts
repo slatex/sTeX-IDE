@@ -40,6 +40,11 @@ export function handleClient(context: STeXContext) {
 	context.client.onRequest("stex/updateHTML",a => {
 		updateHTML(a as HTMLUpdateMessage);
 	});
+	context.client.onRequest("stex/openFile",(a : HTMLUpdateMessage) => {
+		vscode.workspace.openTextDocument(vscode.Uri.parse(a.html)).then((document : vscode.TextDocument) => {
+		  vscode.window.showTextDocument(document,vscode.ViewColumn.One,true);
+		});
+	});
 	context.client.onNotification("stex/updateMathHub", () => context.mathhub?.updateRemote());
 	interface MathHubMessage {
 		mathhub:string,
