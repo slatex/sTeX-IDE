@@ -1,38 +1,40 @@
 import * as vscode from "vscode";
 
-var webviewer : vscode.WebviewPanel | undefined;
-
-export async function viewer() {
-    if (!webviewer) {
-        webviewer = vscode.window.createWebviewPanel(
-            "sTeXPreview",
-            "sTeX HTML Preview",
-            vscode.ViewColumn.Beside,
-            {
-                enableScripts: true,
-                enableCommandUris:true
-            }
-        );
-        webviewer.onDidDispose(() => webviewer = undefined);
+export class HtmlPreviewWindow {
+  currentUrl?: string;
+  private webview?: vscode.WebviewPanel;
+  
+  createIfNecessary(): void {
+    if (!this.webview) {
+      this.webview = vscode.window.createWebviewPanel(
+        "sTeXPreview",
+        "sTeX HTML Preview",
+        vscode.ViewColumn.Beside,
+        {
+          enableScripts: true,
+          enableCommandUris: true,
+        }
+      );
+      this.webview.onDidDispose(() => {
+        this.webview = undefined;
+      });
     }
+  }
+
+  updateHtml(msg: HTMLUpdateMessage): void {
+    this.createIfNecessary();
+    this.currentUrl = msg.html;
+    this.webview!.webview.html = /* html */ `
+<!DOCTYPE html>
+<html>
+  <head></head>
+  <body>
+    <iframe width="100%" height="650px" frameborder="0" src="${this.currentUrl}" title="Preview" style="background:white"></iframe>
+  </body>
+</html>`;
+  }
 }
 
-export class HTMLUpdateMessage {
-    html: string;
-    constructor(html : string) {this.html = html;}
-}
-
-export function updateHTML(msg : HTMLUpdateMessage) {
-    viewer().then(() => {
-        if (webviewer) {
-            webviewer.webview.html = 'Loading';
-        }
-    }).then(() => {
-        if (webviewer) {
-            webviewer.webview.html = `
-            <!DOCTYPE html>
-            <html><head></head><body><iframe width="100%" height="650px" src="` +
-              msg.html + '" title="Preview" style="background:white"></iframe></body></html>';
-        }
-    });
-}
+export type HTMLUpdateMessage = {
+  html: string;
+};

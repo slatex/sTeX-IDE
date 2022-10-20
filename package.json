@@ -65,10 +65,7 @@
 			{
 				"command": "stexide.buildhtml",
 				"title": "Preview HTML",
-				"icon": {
-					"light": "img/mmt_light.svg",
-					"dark": "img/mmt_dark.svg"
-				}
+				"icon": "$(open-preview)"
 			},
 			{
 				"command": "stexide.info",
@@ -86,7 +83,14 @@
 			{
 				"command": "stexide.openSettings",
 				"title": "Extension Settings",
-				"category": "sTeX"
+				"category": "sTeX",
+				"icon": "$(settings-gear)"
+			},
+			{
+				"command": "stexide.openInBrowser",
+				"title": "Open Preview in Browser",
+				"category": "sTeX",
+				"icon": "$(link-external)"
 			}
 		],
 		"viewsContainers": {
@@ -136,11 +140,18 @@
 			"editor/title": [
 				{
 					"command": "stexide.build",
-					"when": "resourceExtname == .tex"
+					"group": "navigation",
+					"when": "editorLangId =~ /^tex$|^latex$|^latex-expl3$/"
 				},
 				{
 					"command": "stexide.buildhtml",
-					"when": "resourceExtname == .tex"
+					"group": "navigation",
+					"when": "editorLangId =~ /^tex$|^latex$|^latex-expl3$/"
+				},
+				{
+					"command": "stexide.openInBrowser",
+					"group": "navigation",
+					"when": "editorLangId =~ /^tex$|^latex$|^latex-expl3$/"
 				}
 			]
 		},

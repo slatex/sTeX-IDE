@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as language from 'vscode-languageclient/node';
-import { CancellationToken, integer, NotificationType0, NotificationType1, ProtocolNotificationType } from 'vscode-languageclient/node';
+import { CancellationToken, NotificationType0, ProtocolNotificationType } from 'vscode-languageclient/node';
 import { STeXContext } from './context';
 import { MathHubTreeProvider, MHTreeItem } from './mathhub';
 import { SearchPanel } from './search';
@@ -22,6 +22,13 @@ export function registerCommands(context: STeXContext) {
 	}));
 	context.vsc.subscriptions.push(vscode.commands.registerCommand("stexide.openSettings", (arg) => {
 		vscode.commands.executeCommand("workbench.action.openSettings", `@ext:${context.vsc.extension.id}`);
+	}));
+	context.vsc.subscriptions.push(vscode.commands.registerCommand("stexide.openInBrowser", (arg) => {
+		if (context.htmlPreview.currentUrl) {
+			vscode.env.openExternal(vscode.Uri.parse(context.htmlPreview.currentUrl));
+		} else {
+			vscode.window.showInformationMessage("No preview found, build first.")
+		}
 	}));
 	/*context.vsc.subscriptions.push(vscode.commands.registerCommand("stexide.insertCode", (str:string,startl:integer,startch:integer,endl:integer,endch:integer) => 
   {
