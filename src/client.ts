@@ -1,7 +1,7 @@
 import * as language from 'vscode-languageclient/node';
 import * as vscode from 'vscode';
 import { STeXContext } from './shared/context';
-import { HTMLUpdateMessage, updateHTML } from './shared/viewer';
+import { HTMLUpdateMessage } from './shared/viewer';
 import { getMathHub } from './nonweb/setup';
 import { BuildMessage, registerCommands } from './shared/commands';
 import { privateEncrypt } from 'crypto';
@@ -37,10 +37,10 @@ export function handleClient(context: STeXContext) {
 		context.outputChannel.appendLine(s);
 	}
 
-	context.client.onRequest("stex/updateHTML",a => {
-		updateHTML(a as HTMLUpdateMessage);
+	context.client.onRequest("stex/updateHTML", (a: HTMLUpdateMessage) => {
+		context.htmlPreview.updateHtml(a);
 	});
-	context.client.onRequest("stex/openFile",(a : HTMLUpdateMessage) => {
+	context.client.onRequest("stex/openFile", (a: HTMLUpdateMessage) => {
 		vscode.workspace.openTextDocument(vscode.Uri.parse(a.html)).then((document : vscode.TextDocument) => {
 		  vscode.window.showTextDocument(document,vscode.ViewColumn.One,true);
 		});
