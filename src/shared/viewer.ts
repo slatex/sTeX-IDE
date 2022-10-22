@@ -24,6 +24,7 @@ export class HtmlPreviewWindow {
   updateHtml(msg: HTMLUpdateMessage): void {
     this.createIfNecessary();
     this.currentUrl = msg.html;
+    this.webview!.webview.html = "Loading"; // <- necessary hack to trigger a reload if this.currentUrl's content has changed!
     this.webview!.webview.html = /* html */ `
 <!DOCTYPE html>
 <html>
