@@ -99,7 +99,12 @@ class ToolsPanel implements vscode.WebviewViewProvider {
               }
             });
             break;
-		}
+          case "parse_tokens":
+            this.scontext.client?.sendNotification(new NotificationType0("sTeX/parseWorkspaceForTokens"));
+          case "set_token_threshold":
+            const uri = vscode.window.activeTextEditor?.document.uri.toString();
+            this.scontext.client?.sendNotification(new ProtocolNotificationType<any, void>("sTeX/setTokenThreshold"), { threshold: msg.threshold, uri });
+		    }
       });
       //this.scontext.outputChannel.appendLine("Values: " + tkuri.toString() + ", " + cssuri.toString());
       webviewView.webview.html = toolhtml(tkuri,cssuri);
@@ -107,19 +112,35 @@ class ToolsPanel implements vscode.WebviewViewProvider {
 }
 
 
-function toolhtml(tkuri:vscode.Uri,cssuri:vscode.Uri) { return `
+function toolhtml(tkuri:vscode.Uri,cssuri:vscode.Uri) { return /* html */ `
 <!DOCTYPE html>
 <html>
 <head>
   <link href="${cssuri}" rel="stylesheet"/>
   <script type="module" src="${tkuri}"></script>
+  <style>
+    #threshold {
+      width: 34px;
+      margin-left: 10px;
+    }
+    .d-flex { display: flex; }
+    .align-center { align-items: center; }
+    .justify-center { justify-content: center; }
+  </style>
 </head>
 <body>
-<div style="text-align:center">
+<div style="text-align: center;">
   <vscode-button onclick="new_archive()">New sTeX Archive</vscode-button>
   <vscode-divider role="separator"></vscode-divider>
   <vscode-button onclick="quickparse_workspace()">Quickparse Workspace</vscode-button>
-</div>
+  <vscode-divider role="separator"></vscode-divider>
+  <vscode-button onclick="parseTokens()">Parse Tokens in Workspace</vscode-button>
+  <div style="margin: 16px;"></div>
+  Filter detected tokens by threshold:
+  <div class="d-flex align-center justify-center">
+    <input type="range" min="0" max="1" value="0" step="0.02" oninput="setTokenThreshold(this.value)" />
+    <div id="threshold">0.0</div>
+  </div>
 <script>
 const vscode = acquireVsCodeApi();
 
@@ -134,6 +155,21 @@ function new_archive() {
     command: "newarchive"
   });
 }
+
+function parseTokens() {
+  vscode.postMessage({
+    command: "parse_tokens"
+  });
+}
+
+function setTokenThreshold(threshold) {
+  vscode.postMessage({
+    command: "set_token_threshold",
+    threshold
+  });
+  document.getElementById("threshold").innerText = threshold;
+}
+
 </script>
 
 </body>
