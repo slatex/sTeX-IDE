@@ -61,7 +61,7 @@ export function launchSTeXServerWithArgs(context: STeXContext,jarPath:string,mat
 	const javaOptions = getJavaOptions(context.outputChannel);
 
 	const baseProperties = [
-		"-Xmx8192m",
+		"-Xmx4096m",
 		"-classpath",
 		jarPath,
 		"info.kwarc.mmt.stex.lsp.Main",

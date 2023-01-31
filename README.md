@@ -1,6 +1,6 @@
 # sTeX README
 
-VSCode extension for the **sTeX** ecosystem for semantic preloading of (mathematical) documents, avaible in the
+VSCode extension for the **sTeX** ecosystem for semantic preloading of (mathematical) documents, available in the
 VSCode Extension Marketplace [here](https://marketplace.visualstudio.com/items?itemName=kwarc.stexide).
 
 Bundles IDE functionality for the [sTeX package](https://github.com/slatex/sTeX) and the

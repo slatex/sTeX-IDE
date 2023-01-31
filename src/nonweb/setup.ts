@@ -34,28 +34,25 @@ function setMathHub(mathhubPath: string) {
     fs.writeFileSync(mathhubEnvConfig, mathhubPath);
 }
 
-async function getMMTVersion(jarPath: string, javaHome?: string): Promise<string | undefined> {
+async function call_cmd(cmd:string,args:string[]) : Promise<string | undefined> {
     return new Promise((resolve, reject) => {
         let stdout = "";
         let stderr = "";
         const resolveWithResult = () => stdout.trim().length > 0
             ? resolve(stdout.trim())
             : reject(stderr);
-
-        // the following way allows jarPath and javaHome to contain spaces
         const env = process.env;
-        if (javaHome) {
-            // adding specified java installation to PATH variable
-            env.PATH = `${path.join(javaHome, "bin")}:${env.PATH}`;
-        }
-        const args = ["-cp", jarPath, "info.kwarc.mmt.api.frontend.Run", "--version"];
-        const proc = spawn("java", args, { env })
+        const proc = spawn(cmd, args, { env })
             .on("error", reject)
             .on("exit", resolveWithResult)
             .on("close", resolveWithResult);
         proc.stdout.on("data", (data) => { stdout += data; });
         proc.stderr.on("data", (data) => { stderr += data; });
     });
+}
+
+async function getMMTVersion(jarPath: string, javaHome?: string): Promise<string | undefined> {
+    return call_cmd("java",["-cp", jarPath, "info.kwarc.mmt.api.frontend.Run", "--version"]);
 }
 
 function singleValidationResponse(id: string, content: string, severity: SEVERITY): ValidatorResponse {
@@ -118,7 +115,25 @@ async function validateMathhubPath(parameters: WorkflowData): Promise<ValidatorR
 
 async function validateJavaHome(parameters: WorkflowData): Promise<ValidatorResponse> {
     const javaHome = parameters.javaHome?.trim();
-    if (javaHome && !hasFileAccess(path.join(javaHome, "bin", "java"), ["X_OK"])) {
+    if (!javaHome) {
+        let which : string | undefined = undefined;
+        if (process.platform.startsWith("win")) {
+            which = (await call_cmd("cmd",["/C","\"where java\""]))?.trim();
+            if (!which || !which.endsWith("java.exe")) {
+                return wizardError("javaHome", "Could not find <code>java</code> executable");
+            }
+            which = which.slice(0,-9)
+        } else {
+            which = await call_cmd("which",["java"]);
+            if (which) which = which.trim();
+            if (!which || !which.endsWith("java")) {
+                return wizardError("javaHome", "Could not find <code>java</code> executable");
+            }
+            which = which.slice(0,-5)
+        };
+        parameters.javaHome = which;
+        return { items: [] };
+    } else if (javaHome && !hasFileAccess(path.join(javaHome, "bin", "java"), ["X_OK"])) {
         return wizardError("javaHome", "Could not find <code>java</code> executable");
     }
     return { items: [] };
@@ -143,6 +158,24 @@ export async function setup(stexc: STeXContext): Promise<void> {
                     validateJavaHome(parameters)
                 ],
                 fields: [
+                    {
+                        id: "java-section",
+                        label: "Java",
+                        description: "Java is required. Could not find <code>JAVA_HOME</code> in environment " +
+                            "variables.<br>Please select the Java installation directory.",
+                        childFields: [{
+                            id: "javaHome",
+                            label: "Select directory",
+                            type: "file-picker",
+                            dialogOptions: {
+                                canSelectFiles: false,
+                                canSelectFolders: true
+                            },
+                            initialState: {
+                                visible: !process.env.JAVA_HOME
+                            }
+                        }]
+                    },
                     {
                         id: "mmt-section",
                         label: "MMT",
@@ -172,24 +205,6 @@ export async function setup(stexc: STeXContext): Promise<void> {
                             placeholder: "/path/to/mathhub-directory",
                             initialValue: mathhub,
                             initialState: { enabled: !mathhub },
-                        }]
-                    },
-                    {
-                        id: "java-section",
-                        label: "Java",
-                        description: "Java is required. Could not find <code>JAVA_HOME</code> in environment " +
-                            "variables.<br>Please select the Java installation directory.",
-                        childFields: [{
-                            id: "javaHome",
-                            label: "Select directory",
-                            type: "file-picker",
-                            dialogOptions: {
-                                canSelectFiles: false,
-                                canSelectFolders: true
-                            },
-                            initialState: {
-                                visible: !process.env.JAVA_HOME
-                            }
                         }]
                     }
                 ]
