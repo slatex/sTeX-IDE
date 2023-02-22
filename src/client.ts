@@ -45,6 +45,9 @@ export function handleClient(context: STeXContext) {
 		  vscode.window.showTextDocument(document,vscode.ViewColumn.One,true);
 		});
 	});
+	context.client.onRequest<string,string>("stex/ping", () => {
+		return "yo";
+	});
 	context.client.onNotification("stex/updateMathHub", () => context.mathhub?.updateRemote());
 	interface MathHubMessage {
 		mathhub:string,
