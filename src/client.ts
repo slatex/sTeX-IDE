@@ -2,7 +2,6 @@ import * as language from 'vscode-languageclient/node';
 import * as vscode from 'vscode';
 import { STeXContext } from './shared/context';
 import { HTMLUpdateMessage } from './shared/viewer';
-import { getMathHub } from './nonweb/setup';
 import { BuildMessage, registerCommands } from './shared/commands';
 import { privateEncrypt } from 'crypto';
 
@@ -48,30 +47,31 @@ export function handleClient(context: STeXContext) {
 	context.client.onRequest<string,string>("stex/ping", () => {
 		return "yo";
 	});
-	context.client.onNotification("stex/updateMathHub", () => context.mathhub?.updateRemote());
+	context.client.onNotification("stex/updateMathHub", () => context.mathhubtreeprovider?.updateRemote());
 	interface MathHubMessage {
 		mathhub:string,
 		remote:string
 	}
+	function next() {
+		registerCommands(context);
+		vscode.workspace.onDidChangeTextDocument(e => {
+		if (isTeX(e.document) && vscode.workspace.getConfiguration("stexide").get("preview") == "on edit") {
+			context.client?.sendNotification(new language.ProtocolNotificationType<BuildMessage,void>("sTeX/buildHTML"),
+				{file:(<vscode.Uri>e.document.uri).toString()});
+		}
+		});
+		vscode.workspace.onDidSaveTextDocument(doc => {
+		if (isTeX(doc) && vscode.workspace.getConfiguration("stexide").get("preview") == "on save") {
+			context.client?.sendNotification(new language.ProtocolNotificationType<BuildMessage,void>("sTeX/buildHTML"),
+				{file:(<vscode.Uri>doc.uri).toString()});
+		}
+		});
+	}
+
 	context.client.sendNotification(new language.ProtocolNotificationType<MathHubMessage,void>("sTeX/setMathHub"),{
-		mathhub:getMathHub(),
+		mathhub:context.mathhub,
 		remote:vscode.workspace.getConfiguration("stexide").get("remoteMathHub")
-	})
-	  .then(()=>{
-		  registerCommands(context);
-		  vscode.workspace.onDidChangeTextDocument(e => {
-			if (isTeX(e.document) && vscode.workspace.getConfiguration("stexide").get("preview") == "on edit") {
-				context.client?.sendNotification(new language.ProtocolNotificationType<BuildMessage,void>("sTeX/buildHTML"),
-					{file:(<vscode.Uri>e.document.uri).toString()});
-			}
-		  });
-		  vscode.workspace.onDidSaveTextDocument(doc => {
-			if (isTeX(doc) && vscode.workspace.getConfiguration("stexide").get("preview") == "on save") {
-				context.client?.sendNotification(new language.ProtocolNotificationType<BuildMessage,void>("sTeX/buildHTML"),
-					{file:(<vscode.Uri>doc.uri).toString()});
-			}
-		  });
-	  });
+	}).then(()=> next() );
 };
 function isTeX(doc:vscode.TextDocument): boolean {
 	return doc.languageId == "tex" ||

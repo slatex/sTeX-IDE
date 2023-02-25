@@ -8,17 +8,17 @@ import { STeXContext } from './context';
 
 export class FileStat implements vscode.FileStat {
 
-	constructor(private fsStat: fs.Stats) { }
+	constructor(public uristr:string,private fsStat: fs.Stats) { }
 
 	get type(): vscode.FileType {
 		return this.fsStat.isFile() ? vscode.FileType.File : this.fsStat.isDirectory() ? vscode.FileType.Directory : this.fsStat.isSymbolicLink() ? vscode.FileType.SymbolicLink : vscode.FileType.Unknown;
 	}
 
-	get isFile(): boolean | undefined {
+	get isFile(): boolean {
 		return this.fsStat.isFile();
 	}
 
-	get isDirectory(): boolean | undefined {
+	get isDirectory(): boolean {
 		return this.fsStat.isDirectory();
 	}
 
@@ -111,6 +111,26 @@ export class MathHubTreeProvider implements vscode.TreeDataProvider<MHTreeItem|F
         return ret;
     }
 
+    private async makeChildren(uri:string): Promise<FileEntry[]> {
+        const children = await Promise.all((await this.readdir(uri)).map(async c => new FileStat(path.join(uri, c),await this.filestat(path.join(uri, c)))));
+        const dirs : {uri: vscode.Uri,type:vscode.FileType}[] = [];
+        const files : {uri: vscode.Uri,type:vscode.FileType}[] = [];
+        children.forEach(c => {
+            if (c.isFile && c.uristr.endsWith(".tex")) {
+                files.push({
+                    uri:vscode.Uri.file(c.uristr),
+                    type:c.type
+                });
+            } else if (c.isDirectory) {
+                dirs.push({
+                    uri:vscode.Uri.file(c.uristr),
+                    type:c.type
+                });
+            }
+        })
+        return dirs.concat(files);
+    }
+
     async getChildren(element?: MHTreeItem|FileEntry): Promise<(MHTreeItem|FileEntry)[]> {
         if (!element) {
             return Promise.resolve(this.roots);
@@ -119,43 +139,11 @@ export class MathHubTreeProvider implements vscode.TreeDataProvider<MHTreeItem|F
             if ((<RepoGroup>element.mh).children !== undefined) {
                 return Promise.resolve(element.children);
             }
-            const uri = vscode.Uri.file((<Repository>element.mh).localPath);
-            const children = await this.readdir(uri.fsPath);
-            const result : FileEntry[] = [];
-            for (let i = 0; i < children.length; i++) {
-                const child = children[i];
-                if (
-                    child !== "content" &&
-                    child !== "errors" &&
-                    child !== "narration" &&
-                    child !== "relational" &&
-                    child !== "bin" &&
-                    child !== "xhtml" &&
-                    child !== "buildresults" &&
-                    child !== "export" &&
-                    child !== ".git"
-                ) {
-                    const stat = new FileStat(await this.filestat(path.join(uri.fsPath, child)));
-                    result.push({
-                        uri:vscode.Uri.file(path.join(uri.fsPath,child)),
-                        type:stat.type
-                    });
-                }
-            }
-            return Promise.resolve(result);
+            const uri = vscode.Uri.file((<Repository>element.mh).localPath).fsPath + "/source";
+            return this.makeChildren(uri);
         } else {
-            const uri = element.uri;
-            const children = await this.readdir(uri.fsPath);
-            const result : FileEntry[] = [];
-            for (let i = 0; i < children.length; i++) {
-                const child = children[i];
-                const stat = new FileStat(await this.filestat(path.join(uri.fsPath, child)));
-                result.push({
-                    uri:vscode.Uri.file(path.join(uri.fsPath,child)),
-                    type:stat.type
-                });
-            }
-            return Promise.resolve(result);
+            const uri = element.uri.fsPath;
+            return this.makeChildren(uri);
         }
     }
 
@@ -224,7 +212,7 @@ export class MathHubTreeProvider implements vscode.TreeDataProvider<MHTreeItem|F
     }
 
     constructor(private context: STeXContext) {
-        context.mathhub = this;
+        context.mathhubtreeprovider = this;
         this.showProgressUntilUpdated();
         this.updateRemote();
     }

@@ -37,7 +37,7 @@ export function registerCommands(context: STeXContext) {
     ));
 	}));*/
 	context.vsc.subscriptions.push(vscode.commands.registerCommand("stexide.mathhub.install", (arg: MHTreeItem) => {
-		context.mathhub?.installArchive(arg.path);
+		context.mathhubtreeprovider?.installArchive(arg.path);
 	}));
 	vscode.window.registerTreeDataProvider("stexidemathhub",new MathHubTreeProvider(context));
 	vscode.window.registerWebviewViewProvider("stexidesearch",new SearchPanel(context));

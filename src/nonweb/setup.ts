@@ -1,59 +1,10 @@
 import { IWizardWorkflowManager, PerformFinishResponse, SEVERITY, BUTTONS, ValidatorResponse, WebviewWizard, WizardDefinition, IWizardPage } from "@redhat-developer/vscode-wizard";
-import { STeXContext } from "../shared/context";
-import { spawn } from "child_process";
 import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
-
-
-export function getMathhubEnvConfigPath(): string {
-    return path.join((process.env.HOME || process.env.USERPROFILE) as string, ".stex", "mathhub.path");
-}
-
-export function getMathHub(): string | undefined {
-    const mathhub = process.env.MATHHUB;
-    if (mathhub) {
-        return mathhub;
-    }
-    const mathhubEnvConfig = getMathhubEnvConfigPath();
-    if (fs.existsSync(mathhubEnvConfig)) {
-        return fs.readFileSync(mathhubEnvConfig).toString().trim();
-    }
-    return undefined;
-}
-
-export function getJarPath(): string | undefined {
-    const config = vscode.workspace.getConfiguration("stexide");
-    return config.get<string>("mmt.jarPath")?.trim();
-}
-
-function setMathHub(mathhubPath: string) {
-    const mathhubEnvConfig = getMathhubEnvConfigPath();
-    fs.mkdirSync(path.dirname(mathhubEnvConfig), { recursive: true });
-    fs.mkdirSync(mathhubPath, { recursive: true });
-    fs.writeFileSync(mathhubEnvConfig, mathhubPath);
-}
-
-async function call_cmd(cmd:string,args:string[]) : Promise<string | undefined> {
-    return new Promise((resolve, reject) => {
-        let stdout = "";
-        let stderr = "";
-        const resolveWithResult = () => stdout.trim().length > 0
-            ? resolve(stdout.trim())
-            : reject(stderr);
-        const env = process.env;
-        const proc = spawn(cmd, args, { env })
-            .on("error", reject)
-            .on("exit", resolveWithResult)
-            .on("close", resolveWithResult);
-        proc.stdout.on("data", (data) => { stdout += data; });
-        proc.stderr.on("data", (data) => { stderr += data; });
-    });
-}
-
-async function getMMTVersion(jarPath: string, javaHome?: string): Promise<string | undefined> {
-    return call_cmd("java",["-cp", jarPath, "info.kwarc.mmt.api.frontend.Run", "--version"]);
-}
+import { launchLocal } from "./launches";
+import { add_exe, JAVAVERSION, LocalSTeXContext, MMTVERSION, STEXVERSION } from "../extension";
+import { call_cmd } from "../util/utils";
 
 function singleValidationResponse(id: string, content: string, severity: SEVERITY): ValidatorResponse {
     return { items: [{ severity, template: { id, content } }] };
@@ -71,15 +22,24 @@ function wizardInfo(id: string, content: string): ValidatorResponse {
     return singleValidationResponse(id, content, SEVERITY.INFO);
 }
 
-async function validateJarPath(parameters: WorkflowData): Promise<ValidatorResponse> {
+async function validateJarPath(parameters: WorkflowData,ctx:LocalSTeXContext): Promise<ValidatorResponse> {
     const jarPath = parameters.jarPath?.trim();
+    ctx.reset();
     if (!jarPath) {
         return wizardWarning("jarPath", "May not be empty");
     } else if (!fs.existsSync(jarPath)) {
         return wizardError("jarPath", "File does not exist");
     }
-    return getMMTVersion(jarPath, parameters.javaHome).then((version) => {
-        return wizardInfo("jarPath", `MMT Version: ${version}`);
+    await vscode.workspace.getConfiguration("stexide").update("mmt.jarPath", jarPath, vscode.ConfigurationTarget.Global);
+    return ctx.mmtversion().then((version) => {
+        if (!version) {
+            return wizardError("jarPath", "An unknown error occurred! Could not get version");
+        }
+        if (version.newer_than(MMTVERSION)) {
+            return wizardInfo("jarPath", `MMT Version: ${version.toString()}`);
+        }
+        parameters.jarPath = undefined;
+        return wizardError("jarPath", `MMT Version ${version.toString()} is outdated. Please download at least version ${MMTVERSION.toString()}!`);
     }).catch((error) => {
         if (error.code === "ENOENT") {
             return wizardError("jarPath", "Could not execute <code>java</code>");
@@ -113,37 +73,62 @@ async function validateMathhubPath(parameters: WorkflowData): Promise<ValidatorR
     return { items: [] };
 }
 
-async function validateJavaHome(parameters: WorkflowData): Promise<ValidatorResponse> {
+
+
+async function validateJavaHome(parameters: WorkflowData,ctx:LocalSTeXContext): Promise<ValidatorResponse> {
     const javaHome = parameters.javaHome?.trim();
     if (!javaHome) {
-        let which : string | undefined = undefined;
-        if (process.platform.startsWith("win")) {
-            which = (await call_cmd("cmd",["/C","\"where java\""]))?.trim();
-            if (!which || !which.endsWith("java.exe")) {
+        ctx.javaPath().then(r => {
+            if (r) {
+                parameters.javaHome = r;
+                return wizardInfo("javaHome", `Path: ${r}`);
+            } else {
                 return wizardError("javaHome", "Could not find <code>java</code> executable");
             }
-            which = which.slice(0,-9)
-        } else {
-            which = await call_cmd("which",["java"]);
-            if (which) which = which.trim();
-            if (!which || !which.endsWith("java")) {
-                return wizardError("javaHome", "Could not find <code>java</code> executable");
-            }
-            which = which.slice(0,-5)
-        };
-        parameters.javaHome = which;
-        return { items: [] };
-    } else if (javaHome && !hasFileAccess(path.join(javaHome, "bin", "java"), ["X_OK"])) {
+        });
+    } else if (!hasFileAccess(add_exe(path.join(javaHome, "java")), ["X_OK"])) {
         return wizardError("javaHome", "Could not find <code>java</code> executable");
+    } else {
+        parameters.javaHome = javaHome;
+        await vscode.workspace.getConfiguration("stexide").update("mmt.javaHome", javaHome, vscode.ConfigurationTarget.Global);
+        const version = await ctx.javaVersion();
+        if (!version) return wizardError("javaHome","Could not determine java version");
+        if (version < JAVAVERSION) {
+            return wizardError("javaHome",`Java Version ${version} is outdated; this extension requires java version ${JAVAVERSION} or higher.`);
+        }
+        return wizardInfo("javaHome", `Path: ${add_exe(path.join(javaHome,"java"))}; Version: ${version}`);
     }
-    return { items: [] };
+    return wizardError("javaHome", "Could not find <code>java</code> executable");
 }
 
-export async function setup(stexc: STeXContext): Promise<void> {
-    const jarPath = getJarPath();
-    const mathhub = getMathHub();
-    if (jarPath && mathhub) {
-        return;
+export async function setup(stexc: LocalSTeXContext): Promise<void> {
+    const jarPath = stexc.jarPath;
+    const mathhub = stexc.mathhub;
+    var java_home = await stexc.javaPath();
+    const hasLatex = await stexc.hasLatex();
+    const hasSTeX = await stexc.hasSTeX();
+    const stexv = await stexc.stexversion();
+    const tex_works = hasLatex && hasSTeX && (stexv ? stexv.newer_than(STEXVERSION) : false);
+    if (java_home) {
+        if (process.platform.startsWith("win")) {
+            java_home = java_home.slice(0,-9);
+        } else {
+            java_home = java_home.slice(0,-5);
+        }
+    }
+    async function validateTeX() {
+        if (!hasLatex) return wizardError("latex","Could not find LaTeX on your system")
+        return { items: [] };
+    }
+    async function validatesTeX() {
+        if (!hasSTeX) return wizardError("stex","Could not find sTeX on your system")
+        return { items: [] };
+    }
+    async function validatesTeXVersion() {
+        if (!stexv) return wizardError("stexversion","Could not determine you sTeX version");
+        if (!stexv.newer_than(STEXVERSION))
+            return wizardError("stexversion",`Extension requires at least sTeX Version` + STEXVERSION.toString() + ".\nPlease update your sTeX package.")
+        return { items: [] };
     }
     return new Promise<void>((resolve) => {
         const def = <WizardDefinition>{
@@ -153,16 +138,43 @@ export async function setup(stexc: STeXContext): Promise<void> {
             pages: [{
                 title: "",
                 asyncValidator: (parameters: WorkflowData, previousParameters: WorkflowData) => [
-                    validateJarPath(parameters),
+                    validateJarPath(parameters,stexc),
                     validateMathhubPath(parameters),
-                    validateJavaHome(parameters)
+                    validateJavaHome(parameters,stexc),
+                    validateTeX(),validatesTeX(),validatesTeXVersion()
                 ],
                 fields: [
                     {
+                        id:"tex-section",
+                        label: "sTeX",
+                        childFields: [
+                            {
+                                id:"latex",
+                                label:"LaTeX found",
+                                type:"checkbox",
+                                initialState: { enabled: false },
+                                initialValue: hasLatex
+                            },
+                            {
+                                id:"stex",
+                                label:"sTeX found",
+                                type:"checkbox",
+                                initialState: { enabled: false },
+                                initialValue: hasSTeX
+                            },
+                            {
+                                id:"stexversion",
+                                label:"sTeX Version " + (stexv ? stexv.toString() : "could not be determined!"),
+                                type:"checkbox",
+                                initialState: { enabled: false },
+                                initialValue: (stexv ? stexv.newer_than(STEXVERSION) : false)
+                            },
+                        ]
+                    },
+                    {
                         id: "java-section",
                         label: "Java",
-                        description: "Java is required. Could not find <code>JAVA_HOME</code> in environment " +
-                            "variables.<br>Please select the Java installation directory.",
+                        description: "Please select the Java installation directory.",
                         childFields: [{
                             id: "javaHome",
                             label: "Select directory",
@@ -171,9 +183,7 @@ export async function setup(stexc: STeXContext): Promise<void> {
                                 canSelectFiles: false,
                                 canSelectFolders: true
                             },
-                            initialState: {
-                                visible: !process.env.JAVA_HOME
-                            }
+                            initialValue: java_home? java_home : ""
                         }]
                     },
                     {
@@ -211,28 +221,41 @@ export async function setup(stexc: STeXContext): Promise<void> {
             }],
             workflowManager: <GenericWizardWorkflowManager<WorkflowData>>{
                 canFinish(wizard: WebviewWizard, data: WorkflowData): boolean {
-                    return !!data.jarPath && !!data.mathhubPath;
+                    return tex_works && !!data.jarPath && !!data.mathhubPath;
                 },
                 performFinish(wizard: WebviewWizard, data: WorkflowData): Promise<PerformFinishResponse | null> {
-                    if (!mathhub && data.mathhubPath) {
-                        setMathHub(data.mathhubPath);
+                    if (data.mathhubPath && data.mathhubPath != mathhub) {
+                        stexc.setMathHub(data.mathhubPath);
                     }
-                    const configStore = vscode.workspace.getConfiguration("stexide");
-                    const returnObject = Promise.all([
-                        configStore.update("mmt.jarPath", data.jarPath, vscode.ConfigurationTarget.Global),
-                        configStore.update("mmt.javaHome", data.javaHome ?? "", vscode.ConfigurationTarget.Global),
-                    ])
-                        .then(() => vscode.commands.executeCommand("setContext", "stex:enabled", true))
-                        .then(() => resolve());
-                    return Promise.resolve({
-                        close: true,
-                        success: true,
-                        returnObject,
-                        templates: []
+                    return stexc.isValid().then(valid => {
+                        if (valid) {
+                            const configStore = vscode.workspace.getConfiguration("stexide");
+                            const returnObject = Promise.all([
+                                configStore.update("mmt.jarPath", data.jarPath, vscode.ConfigurationTarget.Global),
+                                configStore.update("mmt.javaHome", data.javaHome ?? "", vscode.ConfigurationTarget.Global),
+                            ])
+                                .then(() => {vscode.commands.executeCommand("setContext", "stex:enabled", true)})
+                                .then(() => resolve())
+                                .then(() => launchLocal(stexc));
+                            return {
+                                close: true,
+                                success: true,
+                                returnObject,
+                                templates: []
+                            };
+                        } else {
+                            return {
+                                close:false,
+                                success:false,
+                                returnObject:null,
+                                templates:[]
+                            }
+                        }
                     });
                 }
             }
         };
+        vscode.commands.executeCommand("setContext", "stex:enabled", false);
         const wizard = new WebviewWizard("stexsetup", "stexsetup", stexc.vsc, def, new Map());
         wizard.open();
     });

@@ -15,6 +15,9 @@ function getoutputChannel() {
 }
 
 export class STeXContext {
+	get mathhub():string {
+		return ""
+	}
 	private _outputChannel: vscode.OutputChannel | undefined;
 	vsc: vscode.ExtensionContext;
 	client? : language.LanguageClient | weblanguage.LanguageClient;
@@ -23,7 +26,7 @@ export class STeXContext {
 	constructor(context: vscode.ExtensionContext) {
 		this.vsc = context;
 	}
-	mathhub? : MathHubTreeProvider;
+	mathhubtreeprovider? : MathHubTreeProvider;
 
 	get outputChannel(): vscode.OutputChannel {
 		if(this._outputChannel === undefined) {

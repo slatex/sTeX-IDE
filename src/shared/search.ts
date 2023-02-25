@@ -11,6 +11,7 @@ interface LSPSearchResult {
   local:Boolean;
   html:String;
   fileuri:String|null;
+  module:String|null;
 }
 interface LSPSearchResults {
   locals:LSPSearchResult[];
@@ -21,6 +22,7 @@ interface SearchParams {
   defis : Boolean;
   asserts:Boolean;
   exs: Boolean;
+  syms: Boolean;
 }
 
 export class SearchPanel implements vscode.WebviewViewProvider {
@@ -54,7 +56,8 @@ export class SearchPanel implements vscode.WebviewViewProvider {
               query:msg.text,
               defis:msg.searchtype === "defs",
               asserts:msg.searchtype === "ass",
-              exs:msg.searchtype === "ex"
+              exs:msg.searchtype === "ex",
+              syms:msg.searchtype === "syms"
             };
             let ret = this.scontext.client?.sendRequest(new ProtocolRequestType<SearchParams,LSPSearchResults,any,any,any>("sTeX/search",),
               params
@@ -63,7 +66,11 @@ export class SearchPanel implements vscode.WebviewViewProvider {
               var loc : string = "";
               if (res.locals.length > 0) {
                 res.locals.forEach(l => {
-                  loc += htmlResult(l,'openFile(\'' + l.fileuri + '\')',"open");
+                  if (l.module === null || l.module === undefined) {
+                    loc += htmlResult(l,'openFile(\'' + l.fileuri + '\')',"open");
+                  } else {
+                    loc += htmlResult2(l,'openFile(\'' + l.fileuri + '\')',"open",'adduse(\'' + l.archive + '\',\'' + l.module + '\')',"use");
+                  }
                 });
               }
               var rem : string = "";
@@ -81,8 +88,19 @@ export class SearchPanel implements vscode.WebviewViewProvider {
             })
             //vscode.window.showTextDocument(vscode.Uri.parse(msg.uri));
             break;
+          case "adduse":
+            const doc = vscode.window.activeTextEditor?.document;
+            if (doc) {
+              var offset = doc.getText().indexOf("\\begin{document}");
+              if (offset && offset >= 0) {offset += 16;} else {offset = 0;} 
+              const pos = doc.positionAt(offset);
+              const edit = new vscode.WorkspaceEdit();
+              edit.insert(doc.uri,pos,`\n\\usemodule[${msg.archive}]{${msg.uri}}\n`);
+              vscode.workspace.applyEdit(edit);
+            }
+            break;
           case "install": 
-            this.scontext.mathhub?.installArchive(msg.archive);
+            this.scontext.mathhubtreeprovider?.installArchive(msg.archive);
             break;
         }
       });
@@ -96,6 +114,15 @@ function htmlResult(res:LSPSearchResult,link:string,label:string) {
 <div class="result">
   <i><b>[${res.archive}] ${res.sourcefile}</b></i>
   <vscode-button onclick="${link}" appearance="secondary">${label}</vscode-button>
+</div>
+<iframe frameborder="0" src="${res.html}"></iframe>`;
+}
+function htmlResult2(res:LSPSearchResult,link1:string,label1:string,link2:string,label2:string) {
+  return `
+<div class="result">
+  <i><b>[${res.archive}] ${res.sourcefile}</b></i>
+  <vscode-button onclick="${link1}" appearance="secondary">${label1}</vscode-button>
+  <vscode-button onclick="${link2}" appearance="secondary">${label2}</vscode-button>
 </div>
 <iframe frameborder="0" src="${res.html}"></iframe>`;
 }
@@ -160,7 +187,8 @@ function searchhtml(tkuri:vscode.Uri,cssuri:vscode.Uri) { return `
   <vscode-radio id="searchall" value="all" checked>Anywhere</vscode-radio>
   <vscode-radio id="searchdefs" value="defs">Definitions</vscode-radio>
   <vscode-radio id="searchass" value="ass">Assertions</vscode-radio>
-  <vscode-radio id="searchex" value="ex">Examples</vscode-radio>
+  <vscode-radio id="searchex" value="ex">Examples</vscode-radio> 
+  <vscode-radio id="searchsyms" value="syms">Symbols</vscode-radio> 
 </vscode-radio-group>
 <vscode-divider role="separator"></vscode-divider>
 <div id="stex-search-results"></div>
@@ -212,6 +240,13 @@ function doSearch(force=false) {
 function openFile(s) {
   vscode.postMessage({
     command: "open",
+    uri:s
+  });
+}
+function adduse(a,s) {
+  vscode.postMessage({
+    command: "adduse",
+    archive: a,
     uri:s
   });
 }

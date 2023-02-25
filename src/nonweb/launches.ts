@@ -5,7 +5,7 @@ import * as path from "path";
 import { handleClient, languageclient} from "../client";
 import { getJavaOptions } from "../util/java";
 import { STeXContext } from "../shared/context";
-import { getJarPath, getMathHub } from "./setup";
+import { LocalSTeXContext } from "../extension";
 
 export function launchRemote(context: STeXContext) {
 	// The server is started as a separate app and listens on port 5007
@@ -28,7 +28,7 @@ export function launchRemote(context: STeXContext) {
 }
 
 
-export function launchLocal(context: STeXContext) {
+export function launchLocal(context: LocalSTeXContext) {
 	/*getJavaHome().catch(err => javaErr(context))
 	.then(javaHome => {
 		console.log("javaHome: " + javaHome);
@@ -81,13 +81,8 @@ export function launchSTeXServerWithArgs(context: STeXContext,jarPath:string,mat
 	handleClient(context);
 }
 
-function launchSTeXServer(context: STeXContext/*,javaHome: string*/) {
-    /*
-	context.outputChannel.appendLine(`Java home: ${javaHome}`);
-	const javaPath = path.join(javaHome, "bin", "java");
-	 */
-	const jarPathO = getJarPath();
-	if(!jarPathO) { 
+function launchSTeXServer(context: LocalSTeXContext/*,javaHome: string*/) {
+	if(!context.jarPath) { 
 		const message =
 		"Path to MMT jar not set";
 		context.outputChannel.appendLine(message);
@@ -99,8 +94,7 @@ function launchSTeXServer(context: STeXContext/*,javaHome: string*/) {
   		return;
 	}
 
-	const mathhubO = getMathHub();
-	if(!mathhubO) { 
+	if(!context.mathhub) { 
 		const message =
 		"Path to MathHub not set";
 		context.outputChannel.appendLine(message);
@@ -111,6 +105,5 @@ function launchSTeXServer(context: STeXContext/*,javaHome: string*/) {
 		});
   		return;
 	}
-	const jarPath = jarPathO; 
-	launchSTeXServerWithArgs(context,jarPath,mathhubO);
+	launchSTeXServerWithArgs(context,context.jarPath,context.mathhub);
 }
