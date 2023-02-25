@@ -45,8 +45,8 @@ export const STEXVERSION = new Version([3,3,0]);
 export const JAVAVERSION = 11;
 
 export async function activate(context: vscode.ExtensionContext) {
-	//local(context);
-	remote(context);
+	local(context);
+	//remote(context);
 }
 
 async function local(context: vscode.ExtensionContext) {
