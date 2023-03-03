@@ -85,15 +85,17 @@
 			{
 				"command": "stexide.build",
 				"title": "Build PDF/XHTML/OMDoc",
-				"icon": {
-					"light": "img/mmt_light.svg",
-					"dark": "img/mmt_dark.svg"
-				}
+				"icon": "$(testing-run-all-icon)"
 			},
 			{
 				"command": "stexide.buildhtml",
 				"title": "Preview HTML",
-				"icon": "$(open-preview)"
+				"icon": "$(testing-run-icon)"
+			},
+			{
+				"command": "stexide.dump",
+				"title": "Export Standalone HTML",
+				"icon": "$(desktop-download)"
 			},
 			{
 				"command": "stexide.info",
@@ -178,6 +180,11 @@
 				},
 				{
 					"command": "stexide.openInBrowser",
+					"group": "navigation",
+					"when": "editorLangId =~ /^tex$|^latex$|^latex-expl3$/"
+				},
+				{
+					"command": "stexide.dump",
 					"group": "navigation",
 					"when": "editorLangId =~ /^tex$|^latex$|^latex-expl3$/"
 				}

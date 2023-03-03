@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { iFrame } from "../util/utils";
 
 export class HtmlPreviewWindow {
   currentUrl?: string;
@@ -25,14 +26,7 @@ export class HtmlPreviewWindow {
     this.createIfNecessary();
     this.currentUrl = msg.html;
     this.webview!.webview.html = "Loading"; // <- necessary hack to trigger a reload if this.currentUrl's content has changed!
-    this.webview!.webview.html = /* html */ `
-<!DOCTYPE html>
-<html>
-  <head></head>
-  <body>
-    <iframe width="100%" height="650px" frameborder="0" src="${this.currentUrl}" title="Preview" style="background:white"></iframe>
-  </body>
-</html>`;
+    this.webview!.webview.html = iFrame(this.currentUrl);
   }
 }
 

@@ -117,11 +117,11 @@ export async function setup(stexc: LocalSTeXContext): Promise<void> {
         }
     }
     async function validateTeX() {
-        if (!hasLatex) return wizardError("latex","Could not find LaTeX on your system")
+        if (!hasLatex) return wizardError("latex","Could not find LaTeX on your system. Please install LaTeX")
         return { items: [] };
     }
     async function validatesTeX() {
-        if (!hasSTeX) return wizardError("stex","Could not find sTeX on your system")
+        if (!hasSTeX) return wizardError("stex","Could not find sTeX on your system. Please make sure your LaTeX distribution is up to date and the sTeX package is installed.")
         return { items: [] };
     }
     async function validatesTeXVersion() {

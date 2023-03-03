@@ -19,3 +19,14 @@ export async function call_cmd(cmd:string,args:string[]) : Promise<string | unde
 export function getMathhubEnvConfigPath(): string {
   return path.join((process.env.HOME || process.env.USERPROFILE) as string, ".stex", "mathhub.path");
 }
+
+export function iFrame(src:string):string {
+  return `
+<!DOCTYPE html>
+<html>
+  <head></head>
+  <body style="padding:0;width:100vw;height:100vh;overflow:hidden;">
+    <iframe style="width:100vw;height:100vh;overflow:hidden;" src="${src}" title="Preview" style="background:white"></iframe>
+  </body>
+</html>`
+}

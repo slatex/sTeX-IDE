@@ -4,6 +4,7 @@ import { CancellationToken, ProtocolRequestType, ProtocolRequestType0 } from 'vs
 import { STeXContext } from './context';
 import { InstallMessage } from './commands';
 import { MHTreeItem } from './mathhub';
+import { iFrame } from '../util/utils';
 
 interface LSPSearchResult {
   archive:String;
@@ -12,6 +13,7 @@ interface LSPSearchResult {
   html:String;
   fileuri:String|null;
   module:String|null;
+  preview:String;
 }
 interface LSPSearchResults {
   locals:LSPSearchResult[];
@@ -34,19 +36,10 @@ export class SearchPanel implements vscode.WebviewViewProvider {
       };
       const tkuri = webviewView.webview.asWebviewUri(vscode.Uri.joinPath(
         this.scontext.vsc.extensionUri,
-          /*"node_modules",
-          "@vscode",
-          "webview-ui-toolkit",
-          "dist",
-          "toolkit.js"*/
           "resources","toolkit.min.js"
       ));
       const cssuri = webviewView.webview.asWebviewUri(vscode.Uri.joinPath(
         this.scontext.vsc.extensionUri,
-          /*"node_modules",
-          "@vscode/codicons",
-          "dist",
-          "codicon.css"*/
           "resources","codicon.css"
       ));
       webviewView.webview.onDidReceiveMessage(msg => {
@@ -67,16 +60,16 @@ export class SearchPanel implements vscode.WebviewViewProvider {
               if (res.locals.length > 0) {
                 res.locals.forEach(l => {
                   if (l.module === null || l.module === undefined) {
-                    loc += htmlResult(l,'openFile(\'' + l.fileuri + '\')',"open");
+                    loc += htmlResult2(l,'preview(\'' + l.preview + '\')',"preview",'openFile(\'' + l.fileuri + '\')',"open");
                   } else {
-                    loc += htmlResult2(l,'openFile(\'' + l.fileuri + '\')',"open",'adduse(\'' + l.archive + '\',\'' + l.module + '\')',"use");
+                    loc += htmlResult3(l,'preview(\'' + l.preview + '\')',"preview",'openFile(\'' + l.fileuri + '\')',"open",'adduse(\'' + l.archive + '\',\'' + l.module + '\')',"use");
                   }
                 });
               }
               var rem : string = "";
               if (res.remotes.length > 0) {
                 res.remotes.forEach(l => {
-                  rem += htmlResult(l,'installArchive(\'' + l.archive + '\')',"install");
+                  rem += htmlResult3(l,'preview(\'' + l.preview + '\')',"preview",'installArchive(\'' + l.archive + '\')',"install",'installArchive(\'' + l.archive + '\');adduse(\'' + l.archive + '\',\'' + l.module + '\');',"install & use");
                 });
               }
               webviewView.webview.postMessage({html: htmlResults(loc, rem, res.locals.length, res.remotes.length)});
@@ -88,14 +81,35 @@ export class SearchPanel implements vscode.WebviewViewProvider {
             })
             //vscode.window.showTextDocument(vscode.Uri.parse(msg.uri));
             break;
+          case "preview":
+            const panel = vscode.window.createWebviewPanel('webviewPanel','Preview',vscode.ViewColumn.Beside,webviewView.webview.options);
+            panel.webview.html = iFrame(msg.url);
+            break;
           case "adduse":
             const doc = vscode.window.activeTextEditor?.document;
             if (doc) {
-              var offset = doc.getText().indexOf("\\begin{document}");
-              if (offset && offset >= 0) {offset += 16;} else {offset = 0;} 
-              const pos = doc.positionAt(offset);
+              let insertline = 0;
+              let lastemptyline = 0;
+              let inbody = false;
+              let done = false;
+              while (insertline < doc.lineCount && !done) {
+                let line = doc.lineAt(insertline).text;
+                if (!inbody) {
+                  insertline += 1;
+                  if (line.indexOf("\\begin{document") !== -1) {
+                    inbody = true;
+                    lastemptyline = insertline;
+                  }
+                } else if (line.trim() == "") {
+                  insertline += 1;
+                } else if (line.indexOf("\\usemodule") !== -1) {
+                  insertline += 1;
+                  lastemptyline = insertline;
+                } else { done = true;}
+              }
+              const pos = new vscode.Position(lastemptyline,0);
               const edit = new vscode.WorkspaceEdit();
-              edit.insert(doc.uri,pos,`\n\\usemodule[${msg.archive}]{${msg.uri}}\n`);
+              edit.insert(doc.uri,pos,`\\usemodule[${msg.archive}]{${msg.uri}}\n`);
               vscode.workspace.applyEdit(edit);
             }
             break;
@@ -112,19 +126,34 @@ export class SearchPanel implements vscode.WebviewViewProvider {
 function htmlResult(res:LSPSearchResult,link:string,label:string) {
   return `
 <div class="result">
-  <i><b>[${res.archive}] ${res.sourcefile}</b></i>
-  <vscode-button onclick="${link}" appearance="secondary">${label}</vscode-button>
+  <div><i><b>[${res.archive}] ${res.sourcefile}</b></i></div>
+  <div style="align-self:end;"><vscode-button onclick="${link}" appearance="secondary">${label}</vscode-button></div>
 </div>
-<iframe frameborder="0" src="${res.html}"></iframe>`;
+<iframe frameborder="0" src="${res.html}"></iframe>
+<vscode-divider role="separator"></vscode-divider>`;
 }
 function htmlResult2(res:LSPSearchResult,link1:string,label1:string,link2:string,label2:string) {
   return `
 <div class="result">
-  <i><b>[${res.archive}] ${res.sourcefile}</b></i>
-  <vscode-button onclick="${link1}" appearance="secondary">${label1}</vscode-button>
-  <vscode-button onclick="${link2}" appearance="secondary">${label2}</vscode-button>
+  <div><i><b>[${res.archive}] ${res.sourcefile}</b></i></div>
+  <div style="align-self:end;"><vscode-button onclick="${link1}" appearance="secondary">${label1}</vscode-button>
+  <vscode-button onclick="${link2}" appearance="secondary">${label2}</vscode-button></div>
 </div>
-<iframe frameborder="0" src="${res.html}"></iframe>`;
+<iframe frameborder="0" src="${res.html}"></iframe>
+<vscode-divider role="separator"></vscode-divider>`;
+}
+function htmlResult3(res:LSPSearchResult,link1:string,label1:string,link2:string,label2:string,link3:string,label3:string) {
+  return `
+<div class="result">
+  <div><i><b>[${res.archive}] ${res.sourcefile}</b></i></div>
+  <div style="align-self:end;">
+    <vscode-button onclick="${link1}" appearance="secondary">${label1}</vscode-button>
+    <vscode-button onclick="${link2}" appearance="secondary">${label2}</vscode-button>
+    <vscode-button onclick="${link3}" appearance="secondary">${label3}</vscode-button>
+  </div>
+</div>
+<iframe frameborder="0" src="${res.html}"></iframe>
+<vscode-divider role="separator"></vscode-divider>`;
 }
 
 function htmlResults(locals: string, remotes: string, numLocals: number, numRemotes: number) { return `
@@ -171,6 +200,7 @@ function searchhtml(tkuri:vscode.Uri,cssuri:vscode.Uri) { return `
       justify-content: space-between;
       width: 100%;
       margin: 12px 0 8px 0;
+      flex-direction:column;
     }
     vscode-divider {
       margin: 16px 0;
@@ -255,6 +285,9 @@ function installArchive(s) {
     command: "install",
     archive:s
   });
+}
+function preview(s) {
+  vscode.postMessage({command: "preview",url:s});
 }
 window.addEventListener('message', event => {
   const data = event.data;

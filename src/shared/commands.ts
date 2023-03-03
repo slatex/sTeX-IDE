@@ -13,6 +13,17 @@ export interface BuildMessage {
 	file:string
 }
 
+export interface ExportMessage {
+  file:string,
+  dir:string
+}
+
+export interface NewArchiveMessage {
+  archive: string,
+  ns: string,
+  urlbase: string
+}
+
 export function registerCommands(context: STeXContext) {
     context.vsc.subscriptions.push(vscode.commands.registerCommand('stexide.info', () => {
 		vscode.window.showInformationMessage('Hello World from sTeXWeb!');
@@ -51,6 +62,19 @@ export function registerCommands(context: STeXContext) {
 		context.client?.sendNotification(new language.ProtocolNotificationType<BuildMessage,void>("sTeX/buildHTML"),
 			{file:(<vscode.Uri>arg).toString()});
 	}));
+	context.vsc.subscriptions.push(vscode.commands.registerCommand("stexide.dump", arg => {
+    vscode.window.showOpenDialog({
+      canSelectFiles:false,
+      canSelectFolders:true,
+      canSelectMany:false,
+      openLabel:"Select (Empty) Directory"
+    }).then(result => {
+      if (result && result.length > 0) {
+        context.client?.sendNotification(new language.ProtocolNotificationType<ExportMessage,void>("sTeX/exportHTML"),
+          {file:(<vscode.Uri>arg).toString(),dir:result[0].fsPath.toString()});
+      }
+    });
+	}));
 
 }
 
@@ -64,19 +88,10 @@ class ToolsPanel implements vscode.WebviewViewProvider {
       };
       const tkuri = webviewView.webview.asWebviewUri(vscode.Uri.joinPath(
         this.scontext.vsc.extensionUri,
-          /*"node_modules",
-          "@vscode",
-          "webview-ui-toolkit",
-          "dist",
-          "toolkit.js"*/
           "resources","toolkit.min.js"
       ));
       const cssuri = webviewView.webview.asWebviewUri(vscode.Uri.joinPath(
         this.scontext.vsc.extensionUri,
-          /*"node_modules",
-          "@vscode/codicons",
-          "dist",
-          "codicon.css"*/
           "resources","codicon.css"
       ));
       webviewView.webview.onDidReceiveMessage(msg => {
@@ -95,11 +110,40 @@ class ToolsPanel implements vscode.WebviewViewProvider {
               },
             }).then(value => {
               if (value !== undefined) { 
-                this.scontext.client?.sendNotification(new ProtocolNotificationType<InstallMessage, void>("sTeX/initializeArchive"), { archive:value });
+                let archive = value;            
+                vscode.window.showInputBox({
+                  prompt:"Insert the Namespace URI of the new archive:",
+                  password:false,
+                  title:"New Math Archive",
+                  value:`http://mathhub.info/${archive}`,
+                  validateInput(value) {
+                    return undefined // TODO
+                  },
+                }).then(value => {
+                  if (value !== undefined) { 
+                    let ns = value;
+                    vscode.window.showInputBox({
+                      prompt:"Insert the URL base of the archive (where you plan to host it):",
+                      password:false,
+                      title:"New Math Archive",
+                      value:"https://stexmmt.mathhub.info/:sTeX",
+                      validateInput(value) {
+                        return undefined // TODO
+                      },
+                    }).then(value => {
+                      if (value !== undefined) { 
+                        let urlbase = value;
+                        this.scontext.client?.sendNotification(new ProtocolNotificationType<NewArchiveMessage, void>("sTeX/initializeArchive"), { 
+                          archive,ns,urlbase
+                        });
+                      }
+                    });
+                  }
+                });
               }
             });
             break;
-		}
+		    }
       });
       //this.scontext.outputChannel.appendLine("Values: " + tkuri.toString() + ", " + cssuri.toString());
       webviewView.webview.html = toolhtml(tkuri,cssuri);
