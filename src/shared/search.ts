@@ -4,7 +4,7 @@ import { CancellationToken, ProtocolRequestType, ProtocolRequestType0 } from 'vs
 import { STeXContext } from './context';
 import { InstallMessage } from './commands';
 import { MHTreeItem } from './mathhub';
-import { iFrame } from '../util/utils';
+import { iFrame, openHTML } from '../util/utils';
 
 interface LSPSearchResult {
   archive:String;
@@ -82,8 +82,7 @@ export class SearchPanel implements vscode.WebviewViewProvider {
             //vscode.window.showTextDocument(vscode.Uri.parse(msg.uri));
             break;
           case "preview":
-            const panel = vscode.window.createWebviewPanel('webviewPanel','Preview',vscode.ViewColumn.Beside,webviewView.webview.options);
-            panel.webview.html = iFrame(msg.url);
+            openHTML(msg.url);
             break;
           case "adduse":
             const doc = vscode.window.activeTextEditor?.document;

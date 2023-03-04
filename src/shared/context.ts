@@ -15,6 +15,7 @@ function getoutputChannel() {
 }
 
 export class STeXContext {
+	localServer?: string
 	get mathhub():string {
 		return ""
 	}

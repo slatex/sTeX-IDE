@@ -121,6 +121,21 @@
 				"title": "Open Preview in Browser",
 				"category": "sTeX",
 				"icon": "$(link-external)"
+			},
+			{
+				"command": "stexide.buildFile",
+				"title": "Build File/Directory",
+				"category": "sTeX"
+			},
+			{
+				"command": "stexide.buildArchive",
+				"title": "Build Archive/Group",
+				"category": "sTeX"
+			},
+			{
+				"command": "stexide.preview",
+				"title": "Preview",
+				"category": "sTeX"
 			}
 		],
 		"viewsContainers": {
@@ -165,6 +180,26 @@
 					"command": "stexide.mathhub.install",
 					"group": "inline",
 					"when": "view == stexidemathhub && viewItem == remote"
+				},
+				{
+					"command": "stexide.buildFile",
+					"when": "view==stexidemathhub && viewItem == file"
+				},
+				{
+					"command": "stexide.preview",
+					"when": "view==stexidemathhub && viewItem == file"
+				},
+				{
+					"command": "stexide.buildFile",
+					"when": "view==stexidemathhub && viewItem == directory"
+				},
+				{
+					"command": "stexide.buildArchive",
+					"when": "view==stexidemathhub && viewItem == repogroup"
+				},
+				{
+					"command": "stexide.buildArchive",
+					"when": "view==stexidemathhub && viewItem == repository"
 				}
 			],
 			"editor/title": [

@@ -47,6 +47,12 @@ export function handleClient(context: STeXContext) {
 	context.client.onRequest<string,string>("stex/ping", () => {
 		return "yo";
 	});
+	interface LocalServerInterface {
+		url:string
+	}
+	context.client.onNotification("stex/setLocalServer",(a:LocalServerInterface) => {
+		context.localServer = a.url;
+	});
 	context.client.onNotification("stex/updateMathHub", () => context.mathhubtreeprovider?.updateRemote());
 	interface MathHubMessage {
 		mathhub:string,

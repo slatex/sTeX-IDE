@@ -20,6 +20,15 @@ export function getMathhubEnvConfigPath(): string {
   return path.join((process.env.HOME || process.env.USERPROFILE) as string, ".stex", "mathhub.path");
 }
 
+export function openHTML(src:string):vscode.WebviewPanel {
+  const panel = vscode.window.createWebviewPanel('webviewPanel','Preview',vscode.ViewColumn.Beside,{
+    enableScripts: true,
+    enableForms:true     
+  });
+  panel.webview.html = iFrame(src);
+  return panel;
+}
+
 export function iFrame(src:string):string {
   return `
 <!DOCTYPE html>

@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as language from 'vscode-languageclient/node';
 import { CancellationToken, NotificationType0, ProtocolNotificationType } from 'vscode-languageclient/node';
+import { iFrame, openHTML } from '../util/utils';
 import { STeXContext } from './context';
 import { MathHubTreeProvider, MHTreeItem } from './mathhub';
 import { SearchPanel } from './search';
@@ -24,12 +25,30 @@ export interface NewArchiveMessage {
   urlbase: string
 }
 
+export interface BuildGroupMessage {
+  archive: string,
+  file: string
+}
+
 export function registerCommands(context: STeXContext) {
     context.vsc.subscriptions.push(vscode.commands.registerCommand('stexide.info', () => {
 		vscode.window.showInformationMessage('Hello World from sTeXWeb!');
 	}));
 	context.vsc.subscriptions.push(vscode.commands.registerCommand("stexide.openFile", arg => {
 		vscode.window.showTextDocument(arg);
+	}));
+	context.vsc.subscriptions.push(vscode.commands.registerCommand("stexide.preview", arg => {
+    if (context.localServer) {
+      openHTML(context.localServer + "/:sTeX/fulldocument?archive=" + arg.archive + "&filepath=" + arg.subpath);
+    }
+	}));
+	context.vsc.subscriptions.push(vscode.commands.registerCommand("stexide.buildFile", arg => {
+    context.client?.sendNotification(new language.ProtocolNotificationType<BuildGroupMessage,void>("sTeX/buildArchive"),
+    {file:arg.subpath,archive:arg.archive})
+  }));
+	context.vsc.subscriptions.push(vscode.commands.registerCommand("stexide.buildArchive", arg => {
+    context.client?.sendNotification(new language.ProtocolNotificationType<BuildGroupMessage,void>("sTeX/buildArchive"),
+    {file:"",archive:arg.path})
 	}));
 	context.vsc.subscriptions.push(vscode.commands.registerCommand("stexide.openSettings", (arg) => {
 		vscode.commands.executeCommand("workbench.action.openSettings", `@ext:${context.vsc.extension.id}`);

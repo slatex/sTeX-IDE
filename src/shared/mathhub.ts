@@ -41,7 +41,6 @@ export class FileStat implements vscode.FileStat {
 
 export interface Repository {
     id: string,
-    deps: string[],
     isLocal:boolean,
     localPath:string
 }
@@ -88,6 +87,8 @@ export class MHTreeItem extends vscode.TreeItem {
 interface FileEntry {
     uri:vscode.Uri;
     type:vscode.FileType;
+    archive:string;
+    subpath:string;
 }
 
 export class MathHubTreeProvider implements vscode.TreeDataProvider<MHTreeItem|FileEntry> {
@@ -106,25 +107,31 @@ export class MathHubTreeProvider implements vscode.TreeDataProvider<MHTreeItem|F
             };
             ret.iconPath = new vscode.ThemeIcon("file");
         } else {
+            ret.contextValue = "directory"
             ret.iconPath = new vscode.ThemeIcon("file-directory");
         }
         return ret;
     }
 
-    private async makeChildren(uri:string): Promise<FileEntry[]> {
+    private async makeChildren(uri:string,archive:string,parent:string|undefined): Promise<FileEntry[]> {
         const children = await Promise.all((await this.readdir(uri)).map(async c => new FileStat(path.join(uri, c),await this.filestat(path.join(uri, c)))));
-        const dirs : {uri: vscode.Uri,type:vscode.FileType}[] = [];
-        const files : {uri: vscode.Uri,type:vscode.FileType}[] = [];
+        const dirs : FileEntry[] = [];
+        const files : FileEntry[] = [];
         children.forEach(c => {
+            const segs = c.uristr.split("/");
             if (c.isFile && c.uristr.endsWith(".tex")) {
                 files.push({
                     uri:vscode.Uri.file(c.uristr),
-                    type:c.type
+                    type:c.type,
+                    archive,
+                    subpath:parent?parent + "/" + segs[segs.length-1].replace(".tex",".xhtml"):segs[segs.length-1].replace(".tex",".xhtml")
                 });
             } else if (c.isDirectory) {
                 dirs.push({
                     uri:vscode.Uri.file(c.uristr),
-                    type:c.type
+                    type:c.type,
+                    archive,
+                    subpath:parent?parent + "/" + segs[segs.length-1]:segs[segs.length-1]
                 });
             }
         })
@@ -140,10 +147,10 @@ export class MathHubTreeProvider implements vscode.TreeDataProvider<MHTreeItem|F
                 return Promise.resolve(element.children);
             }
             const uri = vscode.Uri.file((<Repository>element.mh).localPath).fsPath + "/source";
-            return this.makeChildren(uri);
+            return this.makeChildren(uri,element.path,undefined);
         } else {
             const uri = element.uri.fsPath;
-            return this.makeChildren(uri);
+            return this.makeChildren(uri,element.archive,element.subpath);
         }
     }
 
