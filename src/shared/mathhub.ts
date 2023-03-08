@@ -118,7 +118,7 @@ export class MathHubTreeProvider implements vscode.TreeDataProvider<MHTreeItem|F
         const dirs : FileEntry[] = [];
         const files : FileEntry[] = [];
         children.forEach(c => {
-            const segs = c.uristr.split("/");
+            const segs = c.uristr.replaceAll("\\","/").split("/");
             if (c.isFile && c.uristr.endsWith(".tex")) {
                 files.push({
                     uri:vscode.Uri.file(c.uristr),
