@@ -4,7 +4,7 @@ import * as path from "path";
 import * as fs from "fs";
 import { launchLocal } from "./launches";
 import { add_exe, JAVAVERSION, LocalSTeXContext, MMTVERSION, STEXVERSION } from "../extension";
-import { call_cmd } from "../util/utils";
+import { call_cmd, openHTML } from "../util/utils";
 
 function singleValidationResponse(id: string, content: string, severity: SEVERITY): ValidatorResponse {
     return { items: [{ severity, template: { id, content } }] };
@@ -236,7 +236,11 @@ export async function setup(stexc: LocalSTeXContext): Promise<void> {
                             ])
                                 .then(() => {vscode.commands.executeCommand("setContext", "stex:enabled", true)})
                                 .then(() => resolve())
-                                .then(() => launchLocal(stexc));
+                                .then(() => launchLocal(stexc))
+                                .then(() => {
+                                    const remote = configStore.get<string>("remoteMathHub");
+                                    openHTML(remote + "/fullhtml?archive=sTeX/Documentation&filepath=tutorial/full.en.xhtml");
+                                });
                             return {
                                 close: true,
                                 success: true,
