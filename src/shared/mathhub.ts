@@ -198,7 +198,7 @@ export class MathHubTreeProvider implements vscode.TreeDataProvider<MHTreeItem|F
         this._onDidChangeTreeData.fire();
     }
 
-    updateRemote() {
+    async updateRemote() {
         this.context.client
             ?.sendRequest(new ProtocolRequestType0<MHEntry[], any, any, any>("sTeX/getMathHubContent"))
             ?.then((ls) => {
