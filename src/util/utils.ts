@@ -9,7 +9,7 @@ export async function call_cmd(cmd:string,args:string[]) : Promise<string | unde
   try {
     const wsf = vscode.workspace.workspaceFolders;
     const cwd = wsf? wsf[0].uri.fsPath : "";
-    const {stdout} = await execPromise(cmd + " " + args.join(" "),{ env: process.env, cwd});
+    const {stdout} = await execPromise(`"${cmd}" ` + args.join(" "),{ env: process.env, cwd});
     return stdout.trim()
   } catch (error) {
     return undefined;
