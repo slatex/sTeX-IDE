@@ -1,9 +1,4 @@
 # Change Log
 
-All notable changes to the "stexide" extension will be documented in this file.
-
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
-
-## [Unreleased]
-
-- Initial release
+## v1.1.1
+- Fixed bug, where certain Java versions could not be detected

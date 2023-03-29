@@ -194,6 +194,13 @@ export class LocalSTeXContext extends STeXContext {
 					const major = parseInt(match[1]);
 					const minor = parseInt(match[2]);
 					return major + (minor / 10);
+				} else {
+					const regex = /version "(\d+)"/;
+					const match = vline.match(regex);
+					if (match) {
+						const major = parseInt(match[1]);
+						return major
+					}
 				}
 			}
 		}
