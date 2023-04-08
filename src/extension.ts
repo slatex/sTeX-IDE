@@ -40,7 +40,7 @@ export class Version {
 	}
 }
 
-export const MMTVERSION = new Version([24,0,0]);
+export const MMTVERSION = new Version([24,1,0]);
 export const STEXVERSION = new Version([3,3,0]);
 export const JAVAVERSION = 11;
 
@@ -82,7 +82,7 @@ import { integer } from 'vscode-languageclient';
 const VERSION_REGEX = /\d+\.\d+(\.\d)?/
 
 export class LocalSTeXContext extends STeXContext {
-	private _mathhub: string | undefined
+	private _mathhub: [string,boolean] | undefined
 	private _mmtversion: Version | undefined
 	private _javapath: string | undefined
 	private _latex = false
@@ -155,7 +155,7 @@ export class LocalSTeXContext extends STeXContext {
 		return this._mmtversion;
 	}
 
-	override get mathhub(): string {
+	override get mathhub(): [string,boolean] {
 		if (!this._mathhub) {
 			this._mathhub = obtainMathHub();
 		}
@@ -211,7 +211,7 @@ export class LocalSTeXContext extends STeXContext {
     fs.mkdirSync(path.dirname(mathhubEnvConfig), { recursive: true });
     fs.mkdirSync(mathhubPath, { recursive: true });
     fs.writeFileSync(mathhubEnvConfig, mathhubPath);
-		this._mathhub = mathhubPath;
+		this._mathhub = [mathhubPath,true];
 	}
 }
 
@@ -247,14 +247,14 @@ async function getJavaHome(): Promise<string|undefined> {
 	}
 }
 
-function obtainMathHub(): string {
+function obtainMathHub(): [string,boolean] {
 	const mathhub = process.env.MATHHUB;
 	if (mathhub) {
-		return mathhub;
+		return [mathhub,true];
 	}
 	const mathhubEnvConfig = getMathhubEnvConfigPath();
 	if (fs.existsSync(mathhubEnvConfig)) {
-		return fs.readFileSync(mathhubEnvConfig).toString().trim();
+		return [fs.readFileSync(mathhubEnvConfig).toString().trim(),true];
 	}
-	return path.join((process.env.HOME || process.env.USERPROFILE) as string, "MathHub");
+	return [path.join((process.env.HOME || process.env.USERPROFILE) as string, "MathHub"),false];
 }

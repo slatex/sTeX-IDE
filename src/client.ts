@@ -75,7 +75,7 @@ export function handleClient(context: STeXContext) {
 	}
 
 	context.client.sendNotification(new language.ProtocolNotificationType<MathHubMessage,void>("sTeX/setMathHub"),{
-		mathhub:context.mathhub,
+		mathhub:context.mathhub[0],
 		remote:vscode.workspace.getConfiguration("stexide").get("remoteMathHub")
 	}).then(()=> next() );
 };

@@ -16,8 +16,8 @@ function getoutputChannel() {
 
 export class STeXContext {
 	localServer?: string
-	get mathhub():string {
-		return ""
+	get mathhub():[string,boolean] {
+		return ["",false]
 	}
 	private _outputChannel: vscode.OutputChannel | undefined;
 	vsc: vscode.ExtensionContext;

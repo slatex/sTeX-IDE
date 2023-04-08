@@ -103,7 +103,7 @@ async function validateJavaHome(parameters: WorkflowData,ctx:LocalSTeXContext): 
 
 export async function setup(stexc: LocalSTeXContext): Promise<void> {
     const jarPath = stexc.jarPath;
-    const mathhub = stexc.mathhub;
+    const [mathhub,unchangeable] = stexc.mathhub;
     var java_home = await stexc.javaPath();
     const hasLatex = await stexc.hasLatex();
     const hasSTeX = await stexc.hasSTeX();
@@ -214,7 +214,7 @@ export async function setup(stexc: LocalSTeXContext): Promise<void> {
                             },
                             placeholder: "/path/to/mathhub-directory",
                             initialValue: mathhub,
-                            initialState: { enabled: !mathhub },
+                            initialState: { enabled: !unchangeable },
                         }]
                     }
                 ]

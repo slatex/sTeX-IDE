@@ -8,7 +8,7 @@
 		"url": "github:slatex/stex-IDE"
 	},
 	"publisher": "kwarc",
-	"version": "1.1.1",
+	"version": "1.1.2",
 	"license": "GPL3",
 	"engines": {
 		"vscode": "^1.67.0"
@@ -91,6 +91,11 @@
 				"command": "stexide.buildhtml",
 				"title": "Preview HTML",
 				"icon": "$(testing-run-icon)"
+			},
+			{
+				"command": "stexide.dumpsimple",
+				"title": "Export Simple HTML",
+				"icon": "$(output)"
 			},
 			{
 				"command": "stexide.dump",
@@ -215,6 +220,11 @@
 				},
 				{
 					"command": "stexide.openInBrowser",
+					"group": "navigation",
+					"when": "editorLangId =~ /^tex$|^latex$|^latex-expl3$/"
+				},
+				{
+					"command": "stexide.dumpsimple",
 					"group": "navigation",
 					"when": "editorLangId =~ /^tex$|^latex$|^latex-expl3$/"
 				},

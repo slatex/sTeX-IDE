@@ -94,6 +94,17 @@ export function registerCommands(context: STeXContext) {
       }
     });
 	}));
+	context.vsc.subscriptions.push(vscode.commands.registerCommand("stexide.dumpsimple", arg => {
+    vscode.window.showSaveDialog({
+      filters:{"XHTML":['xhtml']},
+      title:"Save as HTML File"
+    }).then(result => {
+      if (result) {
+        context.client?.sendNotification(new language.ProtocolNotificationType<ExportMessage,void>("sTeX/exportSimpleHTML"),
+          {file:(<vscode.Uri>arg).toString(),dir:result.fsPath.toString()});
+      }
+    });
+	}));
 
 }
 

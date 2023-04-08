@@ -105,5 +105,5 @@ function launchSTeXServer(context: LocalSTeXContext/*,javaHome: string*/) {
 		});
   		return;
 	}
-	launchSTeXServerWithArgs(context,context.jarPath,context.mathhub);
+	launchSTeXServerWithArgs(context,context.jarPath,context.mathhub[0]);
 }
