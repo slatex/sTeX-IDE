@@ -14,12 +14,19 @@ export function languageclient(so : language.ServerOptions) : language.LanguageC
 	});
 }
 
+interface NERMessage {
+  jar:string,
+  zip:string
+}
+
 
 //import * as tex from '../util/tex';
 //import { HTMLUpdateMessage, updateHTML } from '../xhtmlviewer/viewer';
 
 export function handleClient(context: STeXContext) {
 	if (!context.client) {return;}
+
+	const conf = vscode.workspace.getConfiguration("stexide");
 
 	function registerCommand(command: string, callback: (...args: any[]) => any) {
 		context.vsc.subscriptions.push(vscode.commands.registerCommand(command, callback));
@@ -61,22 +68,31 @@ export function handleClient(context: STeXContext) {
 	function next() {
 		registerCommands(context);
 		vscode.workspace.onDidChangeTextDocument(e => {
-		if (isTeX(e.document) && vscode.workspace.getConfiguration("stexide").get("preview") == "on edit") {
+		if (isTeX(e.document) && conf.get("preview") == "on edit") {
 			context.client?.sendNotification(new language.ProtocolNotificationType<BuildMessage,void>("sTeX/buildHTML"),
 				{file:(<vscode.Uri>e.document.uri).toString()});
 		}
 		});
 		vscode.workspace.onDidSaveTextDocument(doc => {
-		if (isTeX(doc) && vscode.workspace.getConfiguration("stexide").get("preview") == "on save") {
+		if (isTeX(doc) && conf.get("preview") == "on save") {
 			context.client?.sendNotification(new language.ProtocolNotificationType<BuildMessage,void>("sTeX/buildHTML"),
 				{file:(<vscode.Uri>doc.uri).toString()});
 		}
 		});
+
+		const jar = conf.get<string>("mmt.NERjarPath");
+		const model = conf.get<string>("mmt.NERmodelPath");
+		if (jar && model) {
+			context.client?.sendNotification(new language.ProtocolNotificationType<NERMessage, void>("sTeX/initializeNER"), {
+				jar:jar,zip:model
+			});
+			context.hasmodel = true;
+		}
 	}
 
 	context.client.sendNotification(new language.ProtocolNotificationType<MathHubMessage,void>("sTeX/setMathHub"),{
 		mathhub:context.mathhub[0],
-		remote:vscode.workspace.getConfiguration("stexide").get("remoteMathHub")
+		remote:conf.get("remoteMathHub")
 	}).then(()=> next() );
 };
 function isTeX(doc:vscode.TextDocument): boolean {

@@ -5,6 +5,7 @@
 - Compatible with MMT 24.1.0
 - Fixed README
 - Added simple HTML export
+- Added NER Component (Thanks to https://github.com/ux51ekac)
 
 ### v1.1.1
 - Fixed a bug where spaces in the paths to executables (e.g. the jre) caused issues

@@ -173,26 +173,56 @@ class ToolsPanel implements vscode.WebviewViewProvider {
               }
             });
             break;
+          case "set_token_threshold":
+            this.scontext.client?.sendNotification(new ProtocolNotificationType<ThresholdMessage, void>("sTeX/setThreshold"), { 
+              threshold:msg.threshold
+            });
+            break;
 		    }
       });
       //this.scontext.outputChannel.appendLine("Values: " + tkuri.toString() + ", " + cssuri.toString());
-      webviewView.webview.html = toolhtml(tkuri,cssuri);
+      toolhtml(tkuri,cssuri,this.scontext).then(s => webviewView.webview.html = s);
     }
 }
 
 
-function toolhtml(tkuri:vscode.Uri,cssuri:vscode.Uri) { return `
+interface ThresholdMessage {
+  threshold:number
+}
+
+async function nerhtml(ctx:STeXContext) {
+  if (ctx.hasmodel) {
+    return `<div style="display:inline-flex;flex-direction:row;align-items:center">
+    NER Threshold:&nbsp;&nbsp;
+    <input type="range" min="0" max="1" value="0.4" step="0.02" oninput="setTokenThreshold(this.value)" />
+    &nbsp;&nbsp;<div id="nerthreshold">0.4</div>
+  </div>`
+  } else return `<div style="font-size:small">(No NER Setup found)</div>`
+}
+
+async function toolhtml(tkuri:vscode.Uri,cssuri:vscode.Uri,ctx:STeXContext) { return `
 <!DOCTYPE html>
 <html>
 <head>
   <link href="${cssuri}" rel="stylesheet"/>
   <script type="module" src="${tkuri}"></script>
+  <script>
+  function setTokenThreshold(threshold) {
+    vscode.postMessage({
+      command: "set_token_threshold",
+      threshold
+    });
+    document.getElementById("nerthreshold").innerText = threshold;
+  }
+  </script>
 </head>
 <body>
 <div style="text-align:center">
   <vscode-button onclick="new_archive()">New sTeX Archive</vscode-button>
   <vscode-divider role="separator"></vscode-divider>
   <vscode-button onclick="quickparse_workspace()">Quickparse Workspace</vscode-button>
+  <vscode-divider role="separator"></vscode-divider>
+  ${await nerhtml(ctx)}
 </div>
 <script>
 const vscode = acquireVsCodeApi();

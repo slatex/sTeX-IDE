@@ -269,10 +269,20 @@
 							"manually"
 						],
 						"enumDescriptions": [
-							"Everytime a .tex file is saved (whether changed or not)",
-							"Everytime a .tex file is edited (dangerous!)",
+							"Every time a .tex file is saved (whether changed or not)",
+							"Every time a .tex file is edited (dangerous!)",
 							"Only manually"
 						]
+					},
+					"stexide.mmt.NERjarPath": {
+						"type": "string",
+						"default": "",
+						"markdownDescription": "Path to your sTeX-NER jar file"
+					},
+					"stexide.mmt.NERmodelPath": {
+						"type": "string",
+						"default": "",
+						"markdownDescription": "Path to your sTeX-NER model .zip file"
 					}
 				}
 			}

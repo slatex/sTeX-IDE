@@ -35,4 +35,5 @@ export class STeXContext {
 		}
 		return this._outputChannel;
 	}
+	hasmodel = false;
 }
