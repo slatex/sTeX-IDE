@@ -178,6 +178,11 @@ class ToolsPanel implements vscode.WebviewViewProvider {
               threshold:msg.threshold
             });
             break;
+          case "set_ner_on":
+            this.scontext.client?.sendNotification(new ProtocolNotificationType<NEROnMessage, void>("sTeX/setNER"), { 
+              on:msg.checked
+            });
+            break;
 		    }
       });
       //this.scontext.outputChannel.appendLine("Values: " + tkuri.toString() + ", " + cssuri.toString());
@@ -190,10 +195,16 @@ interface ThresholdMessage {
   threshold:number
 }
 
+interface NEROnMessage {
+  on:boolean
+}
+
+
 async function nerhtml(ctx:STeXContext) {
   if (ctx.hasmodel) {
     return `<div style="display:inline-flex;flex-direction:row;align-items:center">
-    NER Threshold:&nbsp;&nbsp;
+    <vscode-checkbox value="use_ner" checked="true" onChange="setUseNER(this.checked)">NER</vscode-checkbox>
+    Threshold:&nbsp;&nbsp;
     <input type="range" min="0" max="1" value="0.4" step="0.02" oninput="setTokenThreshold(this.value)" />
     &nbsp;&nbsp;<div id="nerthreshold">0.4</div>
   </div>`
@@ -213,6 +224,12 @@ async function toolhtml(tkuri:vscode.Uri,cssuri:vscode.Uri,ctx:STeXContext) { re
       threshold
     });
     document.getElementById("nerthreshold").innerText = threshold;
+  }
+  function setUseNER(checked) {
+    vscode.postMessage({
+      command: "set_ner_on",
+      checked
+    });
   }
   </script>
 </head>
