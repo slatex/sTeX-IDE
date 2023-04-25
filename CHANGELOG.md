@@ -2,7 +2,7 @@
 
 ### v1.1.2
 - Fixed a bug where the MathHub directory could never be changed during setup
-- Compatible with MMT 24.1.0
+- Compatible with MMT 25.0.0
 - Fixed README
 - Added simple HTML export
 - Added NER Component (Thanks to https://github.com/ux51ekac)
