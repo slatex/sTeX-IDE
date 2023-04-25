@@ -40,7 +40,7 @@ export class Version {
 	}
 }
 
-export const MMTVERSION = new Version([24,1,0]);
+export const MMTVERSION = new Version([25,0,0]);
 export const STEXVERSION = new Version([3,3,0]);
 export const JAVAVERSION = 11;
 
