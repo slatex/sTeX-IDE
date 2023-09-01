@@ -1,5 +1,9 @@
 # Change Log
 
+### v1.1.3
+- Quiz exporter
+- Compatible with MMT 26.0.0
+
 ### v1.1.2
 - Fixed a bug where the MathHub directory could never be changed during setup
 - Compatible with MMT 25.0.0

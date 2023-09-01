@@ -105,6 +105,17 @@ export function registerCommands(context: STeXContext) {
       }
     });
 	}));
+  context.vsc.subscriptions.push(vscode.commands.registerCommand("stexide.exportproblems", arg => {
+    vscode.window.showSaveDialog({
+      filters:{"JSON":['json']},
+      title:"Save problem set as JSON File"
+    }).then(result => {
+      if (result) {
+        context.client?.sendNotification(new language.ProtocolNotificationType<ExportMessage,void>("sTeX/exportProblems"),
+          {file:(<vscode.Uri>arg).toString(),dir:result.fsPath.toString()});
+      }
+    })
+  }));
 
 }
 
