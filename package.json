@@ -264,6 +264,11 @@
 						"default": "8090",
 						"markdownDescription": "The port at which MMT serves xhtml documents"
 					},
+					"stexide.mmt.ip": {
+						"type": "string",
+						"default": "127.0.0.1",
+						"markdownDescription": "The ip at which MMT serves xhtml documents - change at your own peril (e.g. to 0.0.0.0)"
+					},
 					"stexide.remoteMathHub": {
 						"type": "string",
 						"default": "https://stexmmt.mathhub.info/:sTeX",

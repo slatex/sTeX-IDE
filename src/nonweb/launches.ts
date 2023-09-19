@@ -45,7 +45,8 @@ export function launchLocal(context: LocalSTeXContext) {
 export function launchSTeXServerWithArgs(context: STeXContext,jarPath:string,mathhub:string) {
 	const config = vscode.workspace.getConfiguration("stexide");
 	const portO = config.get<string>("mmt.port");
-	if(!portO) { 
+	const ipO = config.get<string>("mmt.ip");
+	if(!portO || !ipO) { 
 		const message =
 		"Port not set";
 		context.outputChannel.appendLine(message);
@@ -65,7 +66,7 @@ export function launchSTeXServerWithArgs(context: STeXContext,jarPath:string,mat
 		"-classpath",
 		jarPath,
 		"info.kwarc.mmt.stex.lsp.Main",
-		mathhub,portO
+		mathhub,portO,ipO
 	  ];
 	const launchArgs = baseProperties
 		.concat(javaOptions);
