@@ -62,8 +62,12 @@ function hasFileAccess(path: string, access: FileAccess[]): boolean {
 async function validateMathhubPath(parameters: WorkflowData): Promise<ValidatorResponse> {
     const mathhubPath = parameters.mathhubPath?.trim();
     if (!mathhubPath) {
-        return wizardWarning("mathhubPath", "May not be empty");
-    } else if (!fs.existsSync(mathhubPath)) {
+        return wizardWarning("mathhubPath", "Must not be empty");
+    }
+    if (mathhubPath.charAt(1) == ':') {
+        parameters.mathhubPath = mathhubPath.charAt(0).toUpperCase() + mathhubPath.slice(1);
+    }
+    if (!fs.existsSync(mathhubPath)) {
         return wizardWarning("mathhubPath", "Path does not exist but will be created");
     } else if (!fs.statSync(mathhubPath).isDirectory()) {
         return wizardError("mathhubPath", "Path is not a directory");

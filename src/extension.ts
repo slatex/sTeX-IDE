@@ -41,7 +41,7 @@ export class Version {
 }
 
 export const MMTVERSION = new Version([26,0,0]);
-export const STEXVERSION = new Version([3,3,0]);
+export const STEXVERSION = new Version([3,4,0]);
 export const JAVAVERSION = 11;
 
 export async function activate(context: vscode.ExtensionContext) {
@@ -207,6 +207,9 @@ export class LocalSTeXContext extends STeXContext {
 	}
 
 	setMathHub(mathhubPath: string) {
+    if (mathhubPath.charAt(1) == ':') {
+        mathhubPath = mathhubPath.charAt(0).toUpperCase() + mathhubPath.slice(1);
+    }
     const mathhubEnvConfig = getMathhubEnvConfigPath();
     fs.mkdirSync(path.dirname(mathhubEnvConfig), { recursive: true });
     fs.mkdirSync(mathhubPath, { recursive: true });

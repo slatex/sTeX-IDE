@@ -3,6 +3,8 @@
 ### v1.1.3
 - Quiz exporter
 - Compatible with MMT 26.0.0
+- Compatible with sTeX 3.4.0
+- Some fixes for Windows file paths
 
 ### v1.1.2
 - Fixed a bug where the MathHub directory could never be changed during setup
