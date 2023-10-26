@@ -1,5 +1,8 @@
 # Change Log
 
+### v1.1.4
+- Fixed bug where some settings would not take effect until VSCode is restarted
+
 ### v1.1.3
 - Quiz exporter
 - Compatible with MMT 26.0.0

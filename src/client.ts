@@ -26,8 +26,6 @@ interface NERMessage {
 export function handleClient(context: STeXContext) {
 	if (!context.client) {return;}
 
-	const conf = vscode.workspace.getConfiguration("stexide");
-
 	function registerCommand(command: string, callback: (...args: any[]) => any) {
 		context.vsc.subscriptions.push(vscode.commands.registerCommand(command, callback));
 	}
@@ -68,18 +66,21 @@ export function handleClient(context: STeXContext) {
 	function next() {
 		registerCommands(context);
 		vscode.workspace.onDidChangeTextDocument(e => {
+			const conf = vscode.workspace.getConfiguration("stexide");
 		if (isTeX(e.document) && conf.get("preview") == "on edit") {
 			context.client?.sendNotification(new language.ProtocolNotificationType<BuildMessage,void>("sTeX/buildHTML"),
 				{file:(<vscode.Uri>e.document.uri).toString()});
 		}
 		});
 		vscode.workspace.onDidSaveTextDocument(doc => {
+			const conf = vscode.workspace.getConfiguration("stexide");
 		if (isTeX(doc) && conf.get("preview") == "on save") {
 			context.client?.sendNotification(new language.ProtocolNotificationType<BuildMessage,void>("sTeX/buildHTML"),
 				{file:(<vscode.Uri>doc.uri).toString()});
 		}
 		});
 
+		const conf = vscode.workspace.getConfiguration("stexide");
 		const jar = conf.get<string>("mmt.NERjarPath");
 		const model = conf.get<string>("mmt.NERmodelPath");
 		if (jar && model) {
@@ -92,7 +93,7 @@ export function handleClient(context: STeXContext) {
 
 	context.client.sendNotification(new language.ProtocolNotificationType<MathHubMessage,void>("sTeX/setMathHub"),{
 		mathhub:context.mathhub[0],
-		remote:conf.get("remoteMathHub")
+		remote:vscode.workspace.getConfiguration("stexide").get("remoteMathHub")
 	}).then(()=> next() );
 };
 function isTeX(doc:vscode.TextDocument): boolean {
