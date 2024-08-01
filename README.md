@@ -1,4 +1,4 @@
-# sTeX README
+# sTeX Plugin for VSCode
 
 VSCode extension for the **sTeX** ecosystem for semantic preloading of (mathematical) documents, available in the
 VSCode Extension Marketplace [here](https://marketplace.visualstudio.com/items?itemName=kwarc.stexide).
